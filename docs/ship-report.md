@@ -62,6 +62,11 @@ recorded run exists.
 
 Payload-by-payload outcomes after hardening are in `docs/security.md`.
 
+Two Linux-only CI failures surfaced after the first push and were fixed the same day: Windows-only
+`ctypes`/`subprocess` attributes needed platform guards for mypy, and the Docker sandbox needed
+`--user uid:gid` on POSIX because a container with every capability dropped cannot write into a
+host-owned bind mount. `scripts/check.py` now type-checks the Linux target as well.
+
 ## 4. Environment and secrets matrix
 
 | Setting | Where | Default | Notes |

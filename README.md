@@ -1,5 +1,7 @@
 # DRYDOCK
 
+[![check](https://github.com/roshanrana/drydock/actions/workflows/check.yml/badge.svg)](https://github.com/roshanrana/drydock/actions/workflows/check.yml)
+
 **Agentic pipeline generation and validation harness. Client feed specs in, tested ingestion
 pipelines out, and nothing sails without a signature.**
 
