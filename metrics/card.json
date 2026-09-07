@@ -1,0 +1,13 @@
+{
+  "title": "DRYDOCK bench replay",
+  "subtitle": "Every corpus scenario replayed through plan, generate, evaluate and repair with the deterministic provider, plus adversarial pipelines the harness must reject.",
+  "make_target": "make bench",
+  "kpi_order": [
+    "scenarios",
+    "first_pass_rate",
+    "healed_rate",
+    "adversarial_rejected",
+    "mean_iterations",
+    "checkpoints"
+  ]
+}
