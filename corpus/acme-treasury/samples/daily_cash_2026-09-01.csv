@@ -1,0 +1,13 @@
+TradeRef,Acct,ValueDate,Amount,Ccy,Cpty,Narrative
+ACM-CSH-260901-0001,ACME-OPS-GBP-001,2026-09-01,"1,250.00",GBP,Halvorsen Maritime AS,Freight settlement inv HM-44821
+ACM-CSH-260901-0002,ACME-OPS-GBP-001,2026-09-01,"-12,500.00",GBP,Pinecrest Logistics Ltd,Supplier payment PO 77310
+ACM-CSH-260901-0003,ACME-OPS-USD-002,2026-09-01,"48,900.75",USD,Sable & Rook Holdings,Intercompany funding Sep wk1
+ACM-CSH-260901-0004,ACME-OPS-USD-002,2026-09-01,"-3,075.20",USD,Corvid Analytics GmbH,SaaS subscription Q3 
+ACM-CSH-260901-0005,ACME-OPS-EUR-003,2026-09-01,"7,840.00",EUR,Quillon Pharma BV,Receivable inv QP-2026-0912
+ACM-CSH-260901-0006,ACME-OPS-EUR-003,2026-09-01,"-950.00",EUR,Nordlicht Shipping GmbH,Port fees Hamburg
+ACM-CSH-260901-0007,ACME-OPS-GBP-001,2026-09-01,"215,000.00",GBP,Ashgrove Pension Trustees,Term deposit maturity TD-1188
+ACM-CSH-260901-0008,ACME-OPS-GBP-001,2026-09-01,"-64,320.18",GBP,Westmarch Insurance plc,Annual premium policy WM-55021
+ACM-CSH-260901-0009,ACME-OPS-USD-002,2026-09-01,"-1,000,000.00",USD,Ironbridge Commodities SA,Margin call MC-0901A
+ACM-CSH-260901-0010,ACME-OPS-USD-002,2026-09-01,"325.40",USD,Larkspur Retail Group,Rebate credit note CN-2291
+ACM-CSH-260901-0011,ACME-OPS-EUR-003,2026-09-01,"-18,600.00",EUR,Tamsin Row Capital LLP,Advisory fee retainer Aug
+ACM-CSH-260901-0012,ACME-OPS-GBP-001,2026-09-01,"2,489.99",GBP,Brightwater Utilities Ltd,Refund overpayment acct 3391

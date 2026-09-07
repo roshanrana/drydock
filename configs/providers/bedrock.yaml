@@ -1,0 +1,8 @@
+# Amazon Bedrock via boto3 `converse` (install drydock[bedrock]).
+# Credentials come from the standard AWS chain (AWS_PROFILE, env vars, instance role);
+# nothing is read from this file. List available ids with `aws bedrock list-foundation-models`.
+backend: bedrock
+model: anthropic.claude-opus-5
+region: us-east-1
+max_tokens: 4096
+description: Claude on Amazon Bedrock through the converse API.

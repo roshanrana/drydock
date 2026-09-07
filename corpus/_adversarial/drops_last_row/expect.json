@@ -1,0 +1,5 @@
+{
+  "against_client": "acme-treasury",
+  "must_fail": ["H3_completeness"],
+  "notes": "transform returns rows[:-1]; row count and amount_sum disagree with the manifest."
+}

@@ -1,6 +1,6 @@
 # T-003 — Providers: fake, templates, LLM, backends, configs
 
-**Wave:** 1 · **Depends on:** T-000 · **Status:** in_progress
+**Wave:** 1 · **Depends on:** T-000 · **Status:** done
 
 ## Goal
 One `Provider` protocol, two implementations. `FakeProvider` is deterministic, offline,
@@ -36,3 +36,11 @@ uv run pytest tests/test_providers.py tests/test_backends.py tests/test_template
 ```
 
 ## Handoff notes (≤10 lines)
+1. Validation 2026-09-07: `ruff check` + `ruff format --check` -> "All checks passed! / 14 files already formatted"; `mypy drydock/providers` -> "Success: no issues found in 6 source files"; pytest -> `96 passed`, coverage `TOTAL 495 stmts, 7 miss, 99%` (fake.py 100%, others 97-99%).
+2. `ProviderError` lives in `drydock/providers/__init__.py` because `drydock/errors.py` does not exist yet; T-001/T-005 should re-export or alias it from `drydock.errors` rather than define a second class.
+3. T-005 wiring: `load_provider(name, fault_plan=..., on_usage=cb)`; build `fault_plan` as `{client: manifest["scenario"]["injected_defect"]}` from every `corpus/<client>/manifest.json` (`null` -> no defect). `FakeProvider(fault_plan)` also works directly: defect is applied on iteration 1 only, iteration >= 2 renders clean code with `notes` naming `report.errors[0].check`.
+4. `on_usage` is an optional kwarg on both `load_provider` and `LLMProvider(...)`; it fires once per backend call (retries included) with `{"prompt_tokens","completion_tokens","model","latency_ms"}` (`llm.UsageRecord`). `FakeProvider` never fires it.
+5. Planner evidence calls (both providers): `tools.call("list_samples", client=)`, then `tools.call("peek_sample", client=, sample=<first name>)`, `tools.call("profile_sample", client=, sample=)`. The kwarg is `sample`, not `name`, because `ToolBox.call(name, **kw)` reserves `name`; T-004's tools should accept `sample`, or T-005's toolbox should map it.
+6. Generated `dag.py` uses `with DAG(dag_id=, schedule=, start_date=datetime(2026, 1, 1), catchup=False) as dag:` plus `op_kwargs={"path": ...}`; the harness airflow shim must accept these kwargs and support the context manager.
+7. Backends: Anthropic and Bedrock adapters deliberately omit `temperature` (current Claude models reject sampling params); only OpenAI-compat sends it. `ollama.yaml` sets `api_key_env: null` (no env var); vllm needs `VLLM_API_KEY`, anthropic `ANTHROPIC_API_KEY`, bedrock uses the AWS credential chain. `load_provider` builds SDK clients lazily, so loading anthropic/bedrock never imports the SDK.
+8. `inject_defect` raises `ProviderError(... not applicable)` when the plan has nothing to break (e.g. `wrong_slice` on CSV, `trailer_not_skipped` with `trailer_rows=0`); corpus fault plans must match their specs or the run fails loudly instead of passing by accident.

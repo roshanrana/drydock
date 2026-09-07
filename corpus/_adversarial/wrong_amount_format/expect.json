@@ -1,0 +1,5 @@
+{
+  "against_client": "acme-treasury",
+  "must_fail": ["H2_schema"],
+  "notes": "amount is emitted with thousands separators and does not match the 2 dp decimal pattern."
+}

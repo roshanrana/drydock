@@ -1,0 +1,14 @@
+TRADEID   ACCOUNT     VALDATE           AMOUNTCCYCOUNTERPARTY             DESCRIPTION                   
+ORN0115201ORN-PB-118-A20260901     -1250000.00USDIronbridge Commodities SABuy 25000 IBCM @50.00         
+ORN0115202ORN-PB-118-A20260901       482500.00USDSable & Rook Holdings    Sell 5000 SRKH @96.50         
+ORN0115203ORN-PB-118-B20260901        -3180.42GBPOrion Prime Brokerage    Financing charge Aug 2026     
+ORN0115204ORN-PB-118-B20260901       215000.00GBPVantage Grid Energy plc  Sell 40000 VGE @5.375         
+ORN0115205ORN-PB-118-C20260901       -96000.00EURQuillon Pharma BV        Buy 1200 QPBV @80.00          
+ORN0115206ORN-PB-118-C20260901         1875.50EURNordlicht Shipping GmbH  Stock loan fee rebate         
+ORN0115207ORN-PB-118-A20260901          -42.75USDOrion Prime Brokerage    Exchange fees CME Aug         
+ORN0115208ORN-PB-118-A20260901      6000000.00USDAshgrove Pension TrusteesSell 60000 ASHG @100.00       
+ORN0115209ORN-PB-118-B20260901       -58725.00GBPLarkspur Retail Group    Buy 15000 LRG @3.915          
+ORN0115210ORN-PB-118-C20260901        12400.00EURCorvid Analytics GmbH    Dividend CRVD 400 sh          
+ORN0115211ORN-PB-118-A20260901      -775312.50USDTamsin Row Capital LLP   Buy 12500 TRCM @62.025        
+ORN0115212ORN-PB-118-B20260901            0.00GBPOrion Prime Brokerage    Interest true-up nil          
+ORN0115213ORN-PB-118-C20260901        -2500.00EURKettleby Foods plc       Corporate action cash KTB     

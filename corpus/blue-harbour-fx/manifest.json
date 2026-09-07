@@ -1,0 +1,35 @@
+{
+  "client": "blue-harbour-fx",
+  "samples": [
+    {
+      "name": "fx_settlements_20260904.psv",
+      "sha256": "5c6fd09837999a6f185636b61690d71a1ada116316bbb75ddb1982851666a7bd",
+      "bytes": 1614,
+      "expected_rows": 14,
+      "amount_sum": "-148380689.54",
+      "null_rate": {
+        "trade_id": 0.0,
+        "account_id": 0.0,
+        "value_date": 0.0,
+        "amount": 0.0,
+        "currency": 0.0,
+        "counterparty": 0.0,
+        "description": 0.0
+      },
+      "distinct": {
+        "trade_id": 14,
+        "account_id": 5,
+        "value_date": 4,
+        "amount": 14,
+        "currency": 5,
+        "counterparty": 8,
+        "description": 14
+      }
+    }
+  ],
+  "scenario": {
+    "injected_defect": "trailer_not_skipped",
+    "expected_outcome": "heal",
+    "notes": "Pipe-delimited with a TRAILER|n control row; ingesting the trailer breaks H2 schema and H3 completeness."
+  }
+}

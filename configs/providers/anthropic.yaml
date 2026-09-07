@@ -1,0 +1,7 @@
+# Anthropic API via the official SDK (install drydock[anthropic]).
+# The key is read from the environment variable named below, never from this file.
+backend: anthropic
+model: claude-opus-5
+api_key_env: ANTHROPIC_API_KEY
+max_tokens: 4096
+description: Claude through the Anthropic Messages API.

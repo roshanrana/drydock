@@ -1,6 +1,6 @@
 # T-001 — Corpus, loader, paths, errors
 
-**Wave:** 1 · **Depends on:** T-000 · **Status:** in_progress
+**Wave:** 1 · **Depends on:** T-000 · **Status:** done
 
 ## Goal
 Six synthetic client feeds and four adversarial pipelines, pinned by sha256, with a typed
@@ -34,3 +34,10 @@ uv run python -m drydock.corpus --verify
 ```
 
 ## Handoff notes (fill in when done, ≤10 lines)
+- pytest: `80 passed`; `drydock\corpus.py 326 stmts, 1 miss, 99%` (line 299 = defensive guard already enforced by load_spec).
+- `python -m drydock.corpus --verify` -> `corpus ok: 6 clients, 4 adversarial cases` (exit 0). Manifests regenerated via `--rebuild-manifests`.
+- ruff check / ruff format --check / mypy --strict: clean on `drydock/{corpus,errors,paths}.py` + `tests/test_corpus.py`. Repo-wide runs are red only in `drydock/harness`, `drydock/providers`, `tests/test_templates.py` (T-002/T-003 in flight, outside T-001 scope).
+- `SandboxTimeout`/`RunNotFound`/`InvalidTransition` carry `# noqa: N818` because LLD §8 freezes those names.
+- T-005 API: `load_spec(client)` -> FeedSpec; `load_manifest(client).scenario.expected_outcome` in {pass, heal, escalate}, `.scenario.injected_defect` (DEFECT_IDS or None) drives the fake provider; `.samples[*]` are the pins the harness compares against; `list_samples(client)` -> sample Paths; `list_adversarial()` -> AdversarialCase(artifact: PipelineArtifact, must_fail: tuple[CheckId]).
+- Every function takes `root: Path = CORPUS_DIR`; pass a tmp root in tests. All failures raise `CorpusError` (CLI maps DrydockError -> exit 2). Never call `reference_transform` at run time; it is the manifest oracle only.
+- Samples are byte-pinned: commit with LF. Recommend `.gitattributes` `corpus/** text eol=lf` (not in T-001 scope) so a Windows autocrlf checkout does not break `--verify`.

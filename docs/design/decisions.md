@@ -50,3 +50,15 @@ Each scenario declares `injected_defect` and `expected_outcome`. The fake genera
 applies the defect on iteration 1 and repairs it when handed findings. The unfixable
 scenario is expressed as a spec that contradicts its sample, so correct code still fails
 and the loop must escalate. This keeps the demo honest and the behaviour published.
+
+## ADR-007 — Wave 1 integration reconciliations (2026-09-07)
+
+Four defects surfaced only when the independently built components met: (1) the planner
+passed `sample=` where the MCP tools take `name=`, and tool errors were swallowed, so
+evidence gathering now fails loudly and `ToolBox.call` takes the tool name positional-only.
+(2) The escalate scenario passed because the manifest pinned the observed row count; the
+pin is now the client's asserted `expected_row_count` when the contract declares one.
+(3) `wrong_slice` shifted the trade id, which survives stripping; it now shifts the currency
+slice so a digit bleeds into the code (H2). (4) The adversarial case expecting H1 and H5 could
+only ever show H1 because the guard blocks execution; it is split into `slow_network_import`
+(H1) and `sleeps_past_budget` (H5), five cases in all.

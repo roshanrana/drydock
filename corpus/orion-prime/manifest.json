@@ -1,0 +1,35 @@
+{
+  "client": "orion-prime",
+  "samples": [
+    {
+      "name": "trade_extract_20260901.txt",
+      "sha256": "df44455ac423feecb8aea4033c15921b03551211caedb35ad4903392882c0fdd",
+      "bytes": 1470,
+      "expected_rows": 13,
+      "amount_sum": "4526014.83",
+      "null_rate": {
+        "trade_id": 0.0,
+        "account_id": 0.0,
+        "value_date": 0.0,
+        "amount": 0.0,
+        "currency": 0.0,
+        "counterparty": 0.0,
+        "description": 0.0
+      },
+      "distinct": {
+        "trade_id": 13,
+        "account_id": 3,
+        "value_date": 1,
+        "amount": 13,
+        "currency": 3,
+        "counterparty": 11,
+        "description": 13
+      }
+    }
+  ],
+  "scenario": {
+    "injected_defect": "wrong_slice",
+    "expected_outcome": "heal",
+    "notes": "Fixed-width mainframe extract; an off-by-one slice corrupts amounts and currencies until healed."
+  }
+}

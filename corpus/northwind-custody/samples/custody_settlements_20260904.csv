@@ -1,0 +1,16 @@
+Ref,SafekeepingAcct,SettleDate,Amount,DrCr,Ccy,Counterparty,Narrative
+NWC-STL-0088121,NWC-SK-401-GBP,28/08/2026,152000.00,CR,GBP,Ashgrove Pension Trustees,Sale proceeds UKT 4.25% 2032 nominal 150k
+NWC-STL-0088122,NWC-SK-401-GBP,28/08/2026,98450.50,DR,GBP,Oakhurst Property Fund,Purchase 12500 units OPF Income Class A
+NWC-STL-0088123,NWC-SK-402-USD,29/08/2026,240000.00,DR,USD,Ironbridge Commodities SA,Purchase IBC 5.50% 2029 nominal 250k
+NWC-STL-0088124,NWC-SK-402-USD,29/08/2026,6875.00,CR,USD,Ironbridge Commodities SA,Coupon IBC 5.50% 2029
+NWC-STL-0088125,NWC-SK-403-EUR,31/08/2026,17300.25,CR,EUR,Quillon Pharma BV,Dividend QPBV interim 2026
+NWC-STL-0088126,NWC-SK-403-EUR,31/08/2026,4120.00,DR,EUR,Nordlicht Shipping GmbH,Custody fee Q3 2026
+NWC-STL-0088127,NWC-SK-401-GBP,01/09/2026,310500.00,CR,GBP,Vantage Grid Energy plc,Redemption VGE FRN Sep-26
+NWC-STL-0088128,NWC-SK-401-GBP,01/09/2026,75.00,DR,GBP,Northwind Custody Services,Stamp duty reserve tax
+NWC-STL-0088129,NWC-SK-404-CHF,02/09/2026,58900.00,DR,CHF,Corvid Analytics GmbH,Purchase 400 shares CRVD
+NWC-STL-0088130,NWC-SK-404-CHF,02/09/2026,1240.80,CR,CHF,Corvid Analytics GmbH,Dividend CRVD final 2025
+NWC-STL-0088131,NWC-SK-402-USD,03/09/2026,12000.00,CR,USD,Sable & Rook Holdings,Securities lending fee Aug
+NWC-STL-0088132,NWC-SK-403-EUR,03/09/2026,265000.00,DR,EUR,Kettleby Foods plc,Purchase KTB 3.75% 2031 nominal 260k
+NWC-STL-0088133,NWC-SK-401-GBP,04/09/2026,8925.00,CR,GBP,Larkspur Retail Group,Dividend LRG Q2 2026
+NWC-STL-0088134,NWC-SK-404-CHF,04/09/2026,300.00,DR,CHF,Northwind Custody Services,Corporate action processing fee
+NWC-STL-0088135,NWC-SK-402-USD,04/09/2026,45600.00,CR,USD,Tamsin Row Capital LLP,Sale 1200 units TRC Global Macro

@@ -1,0 +1,11 @@
+client: acme-treasury
+feed: daily_cash
+format: csv
+fields:
+  - {source: TradeRef, target: trade_id, dtype: str}
+  - {source: Acct, target: account_id, dtype: str}
+  - {source: ValueDate, target: value_date, dtype: date, transform: "strptime %Y-%m-%d -> ISO-8601"}
+  - {source: Amount, target: amount, dtype: decimal, transform: "strip thousands separators, 2 dp"}
+  - {source: Ccy, target: currency, dtype: str, transform: "upper"}
+  - {source: Cpty, target: counterparty, dtype: str}
+  - {source: Narrative, target: description, dtype: str, transform: "strip"}

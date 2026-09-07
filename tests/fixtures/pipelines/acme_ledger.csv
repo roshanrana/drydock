@@ -1,0 +1,8 @@
+TradeRef,Acct,TradeDate,Amount,DrCr,Ccy,Cpty,Memo
+T001,A100,03/01/2025,"1,250.00",C,USD,Globex,Invoice 1
+T002,A100,03/01/2025,300.50,D,USD,Initech,Invoice 2
+T003,A200,04/01/2025,99.99,C,EUR,Globex,
+T004,A200,05/01/2025,"2,000.00",D,GBP,Umbrella,Refund
+T005,A300,06/01/2025,10.01,C,EUR,Initech,Fee
+T006,A300,06/01/2025,0.00,C,USD,Globex,Zero adjustment
+TRAILER,6

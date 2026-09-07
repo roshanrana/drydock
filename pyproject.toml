@@ -59,6 +59,7 @@ exclude = ["^corpus/", "^runs/", "^deploy/", "^tests/fixtures/"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["slow: spawns a subprocess"]
 
 [tool.coverage.run]
 source = ["drydock"]

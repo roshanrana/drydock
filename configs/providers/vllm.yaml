@@ -1,0 +1,10 @@
+# vLLM OpenAI-compatible server (`vllm serve <model> --port 8000`).
+# The key is read from the environment variable named below; export any value when the
+# server was started without --api-key. Secrets never live in this file.
+backend: openai_compat
+model: Qwen/Qwen2.5-Coder-7B-Instruct
+base_url: http://localhost:8000/v1
+api_key_env: VLLM_API_KEY
+temperature: 0.0
+max_tokens: 4096
+description: vLLM server over the OpenAI-compatible chat API.

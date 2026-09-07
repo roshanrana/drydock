@@ -1,6 +1,6 @@
 # T-004 — Sources MCP server and sync toolbox
 
-**Wave:** 1 · **Depends on:** T-000 · **Status:** in_progress
+**Wave:** 1 · **Depends on:** T-000 · **Status:** done
 
 ## Goal
 The Planner never gets handed files. It asks an MCP server for what it needs, and the
@@ -33,3 +33,10 @@ uv run pytest tests/test_mcp_sources.py -q --cov=drydock.mcp --cov-report=term-m
 ```
 
 ## Handoff notes (≤10 lines)
+- Validation (2026-09-07): ruff `All checks passed!` / `6 files already formatted`; mypy `Success: no issues found in 3 source files`; pytest `81 passed` (1 warning: unregistered `slow` mark); coverage `sources_server.py 100%`, `toolbox.py 92%`, `TOTAL 97%` (toolbox misses are transport-failure branches).
+- T-005: in-memory `McpToolBox(build_server(corpus_root))`; stdio `McpToolBox(StdioServerParameters(command=sys.executable, args=["-m","drydock.mcp.sources_server"], env={"DRYDOCK_CORPUS_ROOT": str(root)}))`. Use as `with ... as tools:` or call `close()` (idempotent). `env` is *merged over* the SDK's safe-default env, so pass only extras.
+- `McpToolBox.call(name, /, **arguments)`: `name` is **positional-only** because `peek_sample`/`profile_sample` take their own `name` kwarg. T-003's `ToolBox` Protocol should declare `call(self, name: str, /, **arguments: Any)`. Copy `tools.calls` into `IngestionPlan.tool_calls`.
+- Tool-level errors come back as `{"error": "..."}` dicts (unknown tool included); only transport/session failures raise `RuntimeError`. Startup failure raises `RuntimeError` from the constructor.
+- `drydock/corpus.py` landed mid-task and the suite passes against it (same 5 signatures as LLD 2.4). T-005 may delete `_FallbackCorpus`/`_FallbackManifest` and the `except ImportError` branch in `sources_server.py` plus the two `*fallback*` tests.
+- Please register `markers = ["slow: spawns a subprocess"]` under `[tool.pytest.ini_options]` in pyproject (out of T-004 scope) to silence the warning.
+- T-007 SDK gotchas (mcp 2.2.0): a tool returning `dict[str, Any]` gives `structured_content` = that dict (and JSON text in `content[0]`); an exception raised inside a tool is NOT surfaced as an exception on the client, it becomes `is_error=True` + text `Error executing tool X` and the server dumps a rich traceback to stderr, so wrap every tool body and return error dicts; `MCPServer` is generic, annotate as `MCPServer[Any]` under mypy --strict; `Client(...)` must be entered and exited in the same task (anyio cancel scopes), hence the single long-lived coroutine per toolbox thread; `server.run("stdio")` is blocking.

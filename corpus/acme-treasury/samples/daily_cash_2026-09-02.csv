@@ -1,0 +1,13 @@
+TradeRef,Acct,ValueDate,Amount,Ccy,Cpty,Narrative
+ACM-CSH-260902-0001,ACME-OPS-GBP-001,2026-09-02,"-4,100.00",GBP,Kettleby Foods plc,Canteen contract Sep
+ACM-CSH-260902-0002,ACME-OPS-GBP-001,2026-09-02,"96,250.00",GBP,Oakhurst Property Fund,Rental income Q3 unit 4B
+ACM-CSH-260902-0003,ACME-OPS-USD-002,2026-09-02,"-27,480.55",USD,Corvid Analytics GmbH,Consulting SOW-19 milestone 2
+ACM-CSH-260902-0004,ACME-OPS-USD-002,2026-09-02,"1,000,000.00",USD,Ironbridge Commodities SA,Margin return MC-0901A
+ACM-CSH-260902-0005,ACME-OPS-EUR-003,2026-09-02,"-33,000.00",EUR,Quillon Pharma BV,Prepayment PO 77402
+ACM-CSH-260902-0006,ACME-OPS-EUR-003,2026-09-02,"512.30",EUR,Nordlicht Shipping GmbH,Demurrage refund
+ACM-CSH-260902-0007,ACME-OPS-GBP-001,2026-09-02,"-215,000.00",GBP,Ashgrove Pension Trustees,Term deposit placement TD-1192
+ACM-CSH-260902-0008,ACME-OPS-GBP-001,2026-09-02,"1,875.60",GBP,Westmarch Insurance plc,Claim settlement WM-CL-0311
+ACM-CSH-260902-0009,ACME-OPS-USD-002,2026-09-02,"-8,640.00",USD,Sable & Rook Holdings,Interest on IC loan Aug
+ACM-CSH-260902-0010,ACME-OPS-USD-002,2026-09-02,"72,315.09",USD,Larkspur Retail Group,Receivable inv LR-88120
+ACM-CSH-260902-0011,ACME-OPS-EUR-003,2026-09-02,"-1,150.00",EUR,Tamsin Row Capital LLP,Expenses reimbursement
+ACM-CSH-260902-0012,ACME-OPS-GBP-001,2026-09-02,"-6,032.44",GBP,Brightwater Utilities Ltd,Electricity Aug site 2

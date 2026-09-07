@@ -1,0 +1,35 @@
+{
+  "client": "northwind-custody",
+  "samples": [
+    {
+      "name": "custody_settlements_20260904.csv",
+      "sha256": "f3316aed8ae3853f2579873a0c0afc26290b2bd439148d828bfdbe528e43b983",
+      "bytes": 1723,
+      "expected_rows": 15,
+      "amount_sum": "-112404.45",
+      "null_rate": {
+        "trade_id": 0.0,
+        "account_id": 0.0,
+        "value_date": 0.0,
+        "amount": 0.0,
+        "currency": 0.0,
+        "counterparty": 0.0,
+        "description": 0.0
+      },
+      "distinct": {
+        "trade_id": 15,
+        "account_id": 4,
+        "value_date": 7,
+        "amount": 15,
+        "currency": 4,
+        "counterparty": 12,
+        "description": 15
+      }
+    }
+  ],
+  "scenario": {
+    "injected_defect": "date_format_swapped",
+    "expected_outcome": "heal",
+    "notes": "Day-first settlement dates and a DR/CR column; a pipeline that assumes %m/%d/%Y fails H4 drift and must heal."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "client": "kestrel-payments",
+  "samples": [
+    {
+      "name": "payments_20260901T0630.jsonl",
+      "sha256": "2513aa281fd6dab887ecd4aa33edbb660176bcff8d157b5dca30b20514cac500",
+      "bytes": 4622,
+      "expected_rows": 16,
+      "amount_sum": "-127401.30",
+      "null_rate": {
+        "trade_id": 0.0,
+        "account_id": 0.0,
+        "value_date": 0.0,
+        "amount": 0.0,
+        "currency": 0.0,
+        "counterparty": 0.0,
+        "description": 0.0
+      },
+      "distinct": {
+        "trade_id": 16,
+        "account_id": 5,
+        "value_date": 1,
+        "amount": 16,
+        "currency": 3,
+        "counterparty": 12,
+        "description": 16
+      }
+    }
+  ],
+  "scenario": {
+    "injected_defect": "amount_sign_dropped",
+    "expected_outcome": "heal",
+    "notes": "JSON lines with unsigned amounts and a direction field; ignoring DEBIT flips the amount sum."
+  }
+}

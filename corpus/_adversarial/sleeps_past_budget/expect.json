@@ -1,0 +1,7 @@
+{
+  "against_client": "acme-treasury",
+  "must_fail": [
+    "H5_latency"
+  ],
+  "notes": "correct output, but six seconds per sample: the latency budget (5 s) must trip."
+}

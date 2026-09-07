@@ -1,0 +1,7 @@
+{
+  "against_client": "acme-treasury",
+  "must_fail": [
+    "H1_runtime"
+  ],
+  "notes": "imports socket for a 'reachability check'. The static guard rejects the import before anything runs, so only H1 can be observed; the sleep never executes."
+}

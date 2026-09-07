@@ -1,0 +1,5 @@
+{
+  "against_client": "acme-treasury",
+  "must_fail": ["H6_dag_contract"],
+  "notes": "dag.py declares extract, transform and load but only wires extract >> transform."
+}

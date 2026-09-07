@@ -1,0 +1,60 @@
+{
+  "client": "acme-treasury",
+  "samples": [
+    {
+      "name": "daily_cash_2026-09-01.csv",
+      "sha256": "cf06e126e623a024e5ab8d72c0a76488caf3fa7f3f574e107aca52852b176016",
+      "bytes": 1416,
+      "expected_rows": 12,
+      "amount_sum": "-823639.24",
+      "null_rate": {
+        "trade_id": 0.0,
+        "account_id": 0.0,
+        "value_date": 0.0,
+        "amount": 0.0,
+        "currency": 0.0,
+        "counterparty": 0.0,
+        "description": 0.0
+      },
+      "distinct": {
+        "trade_id": 12,
+        "account_id": 3,
+        "value_date": 1,
+        "amount": 12,
+        "currency": 3,
+        "counterparty": 12,
+        "description": 12
+      }
+    },
+    {
+      "name": "daily_cash_2026-09-02.csv",
+      "sha256": "9149e9c964fbecd9aeac6761b3496cdd4bbfc15b606b0063250afa935d0df3e2",
+      "bytes": 1385,
+      "expected_rows": 12,
+      "amount_sum": "875550.00",
+      "null_rate": {
+        "trade_id": 0.0,
+        "account_id": 0.0,
+        "value_date": 0.0,
+        "amount": 0.0,
+        "currency": 0.0,
+        "counterparty": 0.0,
+        "description": 0.0
+      },
+      "distinct": {
+        "trade_id": 12,
+        "account_id": 3,
+        "value_date": 1,
+        "amount": 12,
+        "currency": 3,
+        "counterparty": 12,
+        "description": 12
+      }
+    }
+  ],
+  "scenario": {
+    "injected_defect": null,
+    "expected_outcome": "pass",
+    "notes": "Clean daily cash feed with quoted thousands separators; the baseline every provider must pass first time."
+  }
+}

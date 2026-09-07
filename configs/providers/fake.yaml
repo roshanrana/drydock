@@ -1,0 +1,4 @@
+# Deterministic offline provider. Renders the code templates and applies the defect named
+# by the scenario's fault plan on iteration 1. Needs no model, network or environment.
+backend: fake
+description: Offline template provider used by the corpus scenarios and CI.

@@ -1,0 +1,9 @@
+# Local Ollama through its OpenAI-compatible endpoint (`ollama serve`, then `ollama pull`).
+# Ollama does not authenticate, so api_key_env is null: no environment variable is needed.
+backend: openai_compat
+model: qwen2.5-coder:7b
+base_url: http://localhost:11434/v1
+api_key_env: null
+temperature: 0.0
+max_tokens: 4096
+description: Local Ollama model over the OpenAI-compatible chat API.
