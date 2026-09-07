@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DRYDOCK — run review</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #172033;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --teal: #2dd4bf;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 var(--sans); }
+  a { color: var(--teal); }
+  button, input, textarea, select { font: inherit; color: inherit; }
+
+  .topbar {
+    display: flex; align-items: center; gap: 16px; padding: 10px 20px;
+    border-bottom: 1px solid var(--border); background: var(--panel);
+    position: sticky; top: 0; z-index: 2;
+  }
+  .brand { font-weight: 800; letter-spacing: .14em; font-size: 15px; }
+  .brand span { color: var(--teal); }
+  .tagline { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  .live { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--teal); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+  .layout { display: grid; grid-template-columns: 320px 1fr; min-height: calc(100vh - 45px); }
+  .sidebar { border-right: 1px solid var(--border); background: var(--panel-2); overflow-y: auto; }
+  .main { padding: 20px 24px 40px; overflow-x: hidden; min-width: 0; }
+
+  .side-head { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 16px 6px; }
+  .side-head h2 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .count { color: var(--muted); font-size: 12px; }
+  .runs { list-style: none; margin: 0; padding: 0 8px 16px; }
+  .run {
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 10px 10px;
+    margin: 4px 0; border-radius: 8px; cursor: pointer; border: 1px solid transparent;
+  }
+  .run:hover { background: var(--panel); }
+  .run.selected { background: var(--panel); border-color: var(--border); }
+  .run .id { font-family: var(--mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run .meta { grid-column: 1 / -1; color: var(--muted); font-size: 12px; display: flex; gap: 10px; }
+  .empty { color: var(--muted); padding: 16px; font-size: 13px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
+    background: rgba(148,163,184,.14); color: var(--muted); border: 1px solid rgba(148,163,184,.3);
+  }
+  .badge.amber { background: rgba(251,191,36,.14); color: var(--amber); border-color: rgba(251,191,36,.4); }
+  .badge.teal { background: rgba(45,212,191,.14); color: var(--teal); border-color: rgba(45,212,191,.4); }
+  .badge.red { background: rgba(248,113,113,.14); color: var(--red); border-color: rgba(248,113,113,.4); }
+  .badge.running::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.6s infinite; }
+
+  .head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: 18px; }
+  .head h1 { margin: 0; font-family: var(--mono); font-size: 20px; font-weight: 600; word-break: break-all; }
+  .kv { display: flex; gap: 6px; color: var(--muted); font-size: 13px; }
+  .kv b { color: var(--text); font-weight: 500; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .panel h3 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  .panel h3 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+  .timeline { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .iter {
+    min-width: 230px; flex: 0 0 auto; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; cursor: pointer;
+  }
+  .iter:hover { border-color: var(--muted); }
+  .iter.selected { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal) inset; }
+  .iter .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .iter .title { font-weight: 600; }
+  .iter .sub { color: var(--muted); font-size: 12px; margin-top: 8px; display: flex; justify-content: space-between; }
+  .chips { display: flex; gap: 5px; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; padding: 2px 0; width: 30px; text-align: center; border-radius: 5px;
+    border: 1px solid transparent;
+  }
+  .chip.pass { background: rgba(45,212,191,.18); color: var(--teal); border-color: rgba(45,212,191,.45); }
+  .chip.fail { background: rgba(248,113,113,.18); color: var(--red); border-color: rgba(248,113,113,.45); }
+  .chip.na { background: rgba(148,163,184,.12); color: var(--muted); border-color: rgba(148,163,184,.3); }
+  .arrow { align-self: center; color: var(--muted); flex: 0 0 auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  tr:last-child td { border-bottom: none; }
+  td.mono, .mono { font-family: var(--mono); font-size: 12px; }
+  td.evidence { color: var(--muted); max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sev { font-weight: 600; }
+  .sev.error { color: var(--red); }
+  .sev.warning { color: var(--amber); }
+
+  .tabs { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .tab {
+    background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 5px 12px;
+    border-radius: 6px; cursor: pointer; font-family: var(--mono); font-size: 12px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--panel-2); color: var(--text); border-color: var(--muted); }
+  .toggle { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; cursor: pointer; user-select: none; }
+  .toggle input { accent-color: var(--teal); }
+  pre.code {
+    margin: 0; padding: 12px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    font: 12px/1.5 var(--mono); overflow: auto; max-height: 520px; white-space: pre; tab-size: 4;
+  }
+  pre.code .ln { display: block; }
+  pre.code .add { color: var(--teal); background: rgba(45,212,191,.08); }
+  pre.code .del { color: var(--red); background: rgba(248,113,113,.08); }
+  pre.code .hunk { color: var(--amber); }
+  pre.code .hdr { color: var(--muted); }
+
+  .cp { display: grid; grid-template-columns: 44px 150px 1fr auto auto; gap: 6px 14px; padding: 6px 4px; border-bottom: 1px solid var(--border); font-size: 13px; align-items: center; }
+  .cp:last-child { border-bottom: none; }
+  .cp .step { color: var(--muted); font-family: var(--mono); }
+  .cp .node { font-weight: 600; }
+  .cp .cid { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+  .cp .when { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+
+  form.decision { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+  form.decision label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+  form.decision input, form.decision textarea {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text);
+  }
+  form.decision textarea { min-height: 64px; resize: vertical; }
+  form.decision input:focus, form.decision textarea:focus { outline: none; border-color: var(--teal); }
+  .actions { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; }
+  .btn { border: 1px solid transparent; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
+  .btn.approve { background: var(--teal); color: #042f2e; }
+  .btn.reject { background: transparent; color: var(--red); border-color: var(--red); }
+  .btn.ghost { background: transparent; color: var(--muted); border-color: var(--border); padding: 5px 10px; font-weight: 500; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: progress; }
+  .msg { font-size: 13px; }
+  .msg.err { color: var(--red); }
+  .msg.ok { color: var(--teal); }
+  .banner { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.4); color: var(--red); padding: 8px 12px; border-radius: 8px; margin-bottom: 14px; font-size: 13px; }
+  .placeholder { color: var(--muted); padding: 60px 0; text-align: center; }
+  .placeholder .big { font-size: 40px; letter-spacing: .2em; font-weight: 800; color: var(--border); }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { max-height: 240px; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">DRY<span>DOCK</span></div>
+  <div class="tagline">agentic pipeline generation · human gate before anything sails</div>
+  <div class="spacer"></div>
+  <div class="live"><span id="live-dot" class="dot"></span><span id="live-text">idle</span></div>
+  <button id="refresh-btn" class="btn ghost" type="button">Refresh</button>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-head"><h2>Runs</h2><span id="run-count" class="count"></span></div>
+    <ul id="run-list" class="runs"></ul>
+  </aside>
+  <main id="main" class="main">
+    <div class="placeholder"><div class="big">DRYDOCK</div><div>Select a run to review it.</div></div>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var REFRESH_MS = 5000;
+  var TERMINAL = { approved: 1, rejected: 1, escalated: 1, failed: 1 };
+  var CHECKS = ["H1_runtime", "H2_schema", "H3_completeness", "H4_drift", "H5_latency", "H6_dag_contract"];
+  var CHECK_LABEL = {
+    H1_runtime: "H1 runtime", H2_schema: "H2 schema", H3_completeness: "H3 completeness",
+    H4_drift: "H4 drift", H5_latency: "H5 latency", H6_dag_contract: "H6 DAG contract"
+  };
+  var FILES = ["pipeline.py", "dag.py", "mapping.yaml"];
+  var ARTIFACT_KEY = { "pipeline.py": "pipeline_py", "dag.py": "dag_py", "mapping.yaml": "mapping_yaml" };
+
+  var state = {
+    runs: [],
+    selectedRun: null,
+    detail: null,          // {run, iterations}
+    history: [],
+    iterCache: {},         // "runId/n" -> {artifact, report}
+    diffCache: {},         // "runId/n/file" -> string
+    selectedIter: null,
+    file: "pipeline.py",
+    showDiff: false,
+    error: null,
+    decisionMsg: null,
+    form: { approver: "", note: "" },   // survives the 5 s re-render
+    busy: false,
+    timer: null
+  };
+
+  // ------------------------------------------------------------------ DOM helpers
+  // Every server-provided string goes through textContent; no raw HTML is ever assigned.
+  function el(tag, props) {
+    var node = document.createElement(tag);
+    var i;
+    if (props) {
+      for (var key in props) {
+        if (!Object.prototype.hasOwnProperty.call(props, key)) continue;
+        var v = props[key];
+        if (key === "className") node.className = v;
+        else if (key === "text") node.textContent = v == null ? "" : String(v);
+        else if (key === "onClick") node.addEventListener("click", v);
+        else if (key === "onChange") node.addEventListener("change", v);
+        else if (key === "onSubmit") node.addEventListener("submit", v);
+        else node.setAttribute(key, v);
+      }
+    }
+    for (i = 2; i < arguments.length; i++) {
+      var child = arguments[i];
+      if (child == null) continue;
+      if (Array.isArray(child)) { child.forEach(function (c) { if (c != null) node.appendChild(c); }); }
+      else if (typeof child === "string") node.appendChild(document.createTextNode(child));
+      else node.appendChild(child);
+    }
+    return node;
+  }
+
+  function statusClass(status) {
+    if (status === "awaiting_approval") return "amber";
+    if (status === "approved") return "teal";
+    if (status === "rejected" || status === "failed" || status === "escalated") return "red";
+    return "running";
+  }
+
+  function badge(status) {
+    return el("span", { className: "badge " + statusClass(status), text: String(status).replace(/_/g, " ") });
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toISOString().replace("T", " ").replace(/\.\d+Z$/, "Z");
+  }
+
+  function shortId(id) {
+    var s = String(id || "");
+    return s.length > 14 ? s.slice(0, 8) + "…" + s.slice(-4) : s;
+  }
+
+  // ------------------------------------------------------------------ API
+  function api(path, options) {
+    return fetch(path, options).then(function (res) {
+      return res.text().then(function (body) {
+        var data = null;
+        try { data = body ? JSON.parse(body) : null; } catch (e) { data = { detail: body }; }
+        if (!res.ok) {
+          var detail = data && data.detail;
+          if (Array.isArray(detail)) detail = detail.map(function (d) { return d.msg || JSON.stringify(d); }).join("; ");
+          var err = new Error(detail || (res.status + " " + res.statusText));
+          err.status = res.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  function loadRuns() {
+    return api("/api/runs").then(function (runs) {
+      state.runs = runs;
+      state.error = null;
+      if (!state.selectedRun && runs.length) state.selectedRun = runs[0].run_id;
+      if (state.selectedRun && !runs.some(function (r) { return r.run_id === state.selectedRun; })) {
+        state.selectedRun = runs.length ? runs[0].run_id : null;
+      }
+    });
+  }
+
+  function loadDetail(runId) {
+    return Promise.all([api("/api/runs/" + encodeURIComponent(runId)), api("/api/runs/" + encodeURIComponent(runId) + "/history")])
+      .then(function (res) {
+        if (runId !== state.selectedRun) return;
+        state.detail = res[0];
+        state.history = res[1] || [];
+        var iters = state.detail.iterations || [];
+        var have = iters.some(function (it) { return it.iteration === state.selectedIter; });
+        if (!have) state.selectedIter = iters.length ? iters[iters.length - 1].iteration : null;
+        return Promise.all(iters.map(function (it) { return loadIteration(runId, it.iteration); }));
+      })
+      .then(function () {
+        if (state.selectedIter != null && state.showDiff) return loadDiff(runId, state.selectedIter, state.file);
+      });
+  }
+
+  function loadIteration(runId, n) {
+    var key = runId + "/" + n;
+    if (state.iterCache[key]) return Promise.resolve(state.iterCache[key]);
+    return api("/api/runs/" + encodeURIComponent(runId) + "/iterations/" + n).then(function (data) {
+      state.iterCache[key] = data;
+      return data;
+    });
+  }
+
+  function loadDiff(runId, n, file) {
+    var key = runId + "/" + n + "/" + file;
+    if (state.diffCache[key] != null) return Promise.resolve(state.diffCache[key]);
+    return api("/api/runs/" + encodeURIComponent(runId) + "/diff/" + n + "?file=" + encodeURIComponent(file)).then(function (data) {
+      state.diffCache[key] = data.diff || "";
+      return state.diffCache[key];
+    });
+  }
+
+  function refresh() {
+    clearTimeout(state.timer);
+    setLive(true, "refreshing…");
+    return loadRuns()
+      .then(function () { if (state.selectedRun) return loadDetail(state.selectedRun); })
+      .catch(function (err) { state.error = err.message || String(err); })
+      .then(function () {
+        render();
+        var active = state.runs.some(function (r) { return !TERMINAL[r.status]; });
+        if (active) {
+          setLive(true, "auto-refresh 5 s");
+          state.timer = setTimeout(refresh, REFRESH_MS);
+        } else {
+          setLive(false, state.runs.length ? "all runs terminal · auto-refresh paused" : "no runs");
+        }
+      });
+  }
+
+  function setLive(on, text) {
+    var dot = document.getElementById("live-dot");
+    dot.className = "dot" + (on ? " on" : "");
+    document.getElementById("live-text").textContent = text;
+  }
+
+  // ------------------------------------------------------------------ actions
+  function selectRun(runId) {
+    if (runId === state.selectedRun) return;
+    state.selectedRun = runId;
+    state.detail = null;
+    state.history = [];
+    state.selectedIter = null;
+    state.decisionMsg = null;
+    render();
+    loadDetail(runId).catch(function (err) { state.error = err.message; }).then(render);
+  }
+
+  function selectIteration(n) {
+    state.selectedIter = n;
+    if (state.showDiff) {
+      loadDiff(state.selectedRun, n, state.file).catch(function (err) { state.error = err.message; }).then(render);
+    } else {
+      render();
+    }
+  }
+
+  function selectFile(file) {
+    state.file = file;
+    if (state.showDiff && state.selectedIter != null) {
+      loadDiff(state.selectedRun, state.selectedIter, file).catch(function (err) { state.error = err.message; }).then(render);
+    } else {
+      render();
+    }
+  }
+
+  function toggleDiff(on) {
+    state.showDiff = on;
+    if (on && state.selectedIter != null) {
+      loadDiff(state.selectedRun, state.selectedIter, state.file).catch(function (err) { state.error = err.message; }).then(render);
+    } else {
+      render();
+    }
+  }
+
+  function submitDecision(decision, form) {
+    var approver = form.elements.approver.value.trim();
+    var note = form.elements.note.value.trim();
+    if (!approver) { state.decisionMsg = { kind: "err", text: "Approver is required." }; render(); return; }
+    state.busy = true;
+    render();
+    api("/api/runs/" + encodeURIComponent(state.selectedRun) + "/decision", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: decision, approver: approver, note: note })
+    }).then(function (record) {
+      state.decisionMsg = { kind: "ok", text: "Recorded: " + record.status + " by " + (record.approved_by || approver) };
+      state.form = { approver: "", note: "" };
+    }).catch(function (err) {
+      state.decisionMsg = { kind: "err", text: err.message || "Decision failed." };
+    }).then(function () {
+      state.busy = false;
+      return refresh();
+    });
+  }
+
+  // ------------------------------------------------------------------ rendering
+  function render() {
+    // The whole main pane is rebuilt; keep the reviewer's caret if they were mid-typing.
+    var active = document.activeElement;
+    var inForm = active && active.name && active.closest && active.closest("form.decision");
+    var focusName = inForm ? active.name : null;
+    var selStart = inForm ? active.selectionStart : 0;
+    var selEnd = inForm ? active.selectionEnd : 0;
+    renderRunList();
+    renderMain();
+    if (!focusName) return;
+    var again = document.querySelector('form.decision [name="' + focusName + '"]');
+    if (!again) return;
+    again.focus();
+    try { again.setSelectionRange(selStart, selEnd); } catch (e) { /* not a text control */ }
+  }
+
+  function renderRunList() {
+    var list = document.getElementById("run-list");
+    document.getElementById("run-count").textContent = state.runs.length ? state.runs.length + " total" : "";
+    list.replaceChildren();
+    if (!state.runs.length) {
+      list.appendChild(el("li", { className: "empty", text: "No runs yet. Start one with `drydock build <client>`." }));
+      return;
+    }
+    state.runs.forEach(function (r) {
+      var item = el("li", { className: "run" + (r.run_id === state.selectedRun ? " selected" : ""), onClick: function () { selectRun(r.run_id); } },
+        el("span", { className: "id", title: r.run_id, text: r.run_id }),
+        badge(r.status),
+        el("span", { className: "meta" },
+          el("span", { text: r.client }),
+          el("span", { text: r.provider }),
+          el("span", { text: "iter " + r.iterations + "/" + r.max_iterations })
+        )
+      );
+      list.appendChild(item);
+    });
+  }
+
+  function renderMain() {
+    var main = document.getElementById("main");
+    main.replaceChildren();
+    if (state.error) main.appendChild(el("div", { className: "banner", text: "Error: " + state.error }));
+    if (!state.selectedRun || !state.detail) {
+      main.appendChild(el("div", { className: "placeholder" },
+        el("div", { className: "big", text: "DRYDOCK" }),
+        el("div", { text: state.selectedRun ? "Loading run…" : "Select a run to review it." })));
+      return;
+    }
+    var run = state.detail.run;
+    main.appendChild(renderHeader(run));
+    main.appendChild(renderTimeline(run, state.detail.iterations || []));
+    main.appendChild(renderFindings());
+    main.appendChild(renderCode());
+    main.appendChild(renderCheckpoints());
+    if (run.status === "awaiting_approval") main.appendChild(renderDecision(run));
+    else if (run.approved_by || run.decision_note) main.appendChild(renderDecisionRecord(run));
+  }
+
+  function renderHeader(run) {
+    return el("div", { className: "head" },
+      el("h1", { text: run.run_id }),
+      badge(run.status),
+      el("span", { className: "kv" }, "client ", el("b", { text: run.client })),
+      el("span", { className: "kv" }, "provider ", el("b", { text: run.provider })),
+      el("span", { className: "kv" }, "iterations ", el("b", { text: run.iterations + " / " + run.max_iterations })),
+      el("span", { className: "kv" }, "updated ", el("b", { className: "mono", text: fmtTime(run.updated_at) }))
+    );
+  }
+
+  function chipsFor(iterData) {
+    var report = iterData && iterData.report;
+    var byCheck = {};
+    if (report && report.checks) report.checks.forEach(function (c) { byCheck[c.check] = c; });
+    return el("div", { className: "chips" }, CHECKS.map(function (id, idx) {
+      var c = byCheck[id];
+      var cls = !report || !c ? "na" : (c.passed ? "pass" : "fail");
+      var title = CHECK_LABEL[id] + (cls === "na" ? " — not evaluated" : cls === "pass" ? " — passed" : " — failed (" + (c.findings ? c.findings.length : 0) + " findings)");
+      return el("span", { className: "chip " + cls, title: title, text: "H" + (idx + 1) });
+    }));
+  }
+
+  function renderTimeline(run, iterations) {
+    var row = el("div", { className: "timeline" });
+    if (!iterations.length) {
+      row.appendChild(el("div", { className: "empty", text: run.status === "planning" ? "Planning — no iterations yet." : "No iterations recorded." }));
+    }
+    iterations.forEach(function (it, i) {
+      var data = state.iterCache[run.run_id + "/" + it.iteration];
+      var report = data && data.report;
+      var passed = report ? report.passed : it.passed;
+      var verdict = report == null && it.passed == null ? "not evaluated" : (passed ? "passed" : "failed");
+      var vcls = report == null && it.passed == null ? "" : (passed ? "teal" : "red");
+      if (i > 0) row.appendChild(el("span", { className: "arrow", text: "→" }));
+      row.appendChild(el("div", { className: "iter" + (it.iteration === state.selectedIter ? " selected" : ""), onClick: function () { selectIteration(it.iteration); } },
+        el("div", { className: "top" },
+          el("span", { className: "title", text: "Iteration " + it.iteration }),
+          el("span", { className: "badge " + vcls, text: verdict })),
+        chipsFor(data),
+        el("div", { className: "sub" },
+          el("span", { text: (report ? report.rows_emitted : 0) + " rows" }),
+          el("span", { text: (it.wall_ms != null ? it.wall_ms : (report ? report.wall_ms : 0)) + " ms" }),
+          el("span", { text: data && data.artifact ? data.artifact.generator : "" }))));
+    });
+    return el("section", { className: "panel" },
+      el("h3", {}, "Iteration timeline", el("span", { className: "hint", text: "H1 runtime · H2 schema · H3 completeness · H4 drift · H5 latency · H6 DAG contract" })),
+      row);
+  }
+
+  function renderFindings() {
+    var data = state.selectedIter != null ? state.iterCache[state.selectedRun + "/" + state.selectedIter] : null;
+    var report = data && data.report;
+    var section = el("section", { className: "panel" },
+      el("h3", {}, "Findings", el("span", { className: "hint", text: state.selectedIter != null ? "iteration " + state.selectedIter : "" })));
+    if (!report) {
+      section.appendChild(el("div", { className: "empty", text: state.selectedIter == null ? "No iteration selected." : "No harness report for this iteration." }));
+      return section;
+    }
+    var rows = [];
+    report.checks.forEach(function (c) {
+      (c.findings || []).forEach(function (f) { rows.push({ check: c.check, f: f }); });
+    });
+    if (!rows.length) {
+      section.appendChild(el("div", { className: "empty", text: "All six checks passed with no findings." }));
+      return section;
+    }
+    var table = el("table", {},
+      el("thead", {}, el("tr", {}, el("th", { text: "Check" }), el("th", { text: "Severity" }), el("th", { text: "Message" }), el("th", { text: "Evidence" }))),
+      el("tbody", {}, rows.map(function (r) {
+        var ev = r.f.evidence && Object.keys(r.f.evidence).length ? JSON.stringify(r.f.evidence) : "";
+        return el("tr", {},
+          el("td", { className: "mono", text: CHECK_LABEL[r.check] || r.check }),
+          el("td", {}, el("span", { className: "sev " + r.f.severity, text: r.f.severity })),
+          el("td", { text: r.f.message }),
+          el("td", { className: "evidence mono", title: ev, text: ev }));
+      })));
+    section.appendChild(table);
+    return section;
+  }
+
+  function renderCode() {
+    var data = state.selectedIter != null ? state.iterCache[state.selectedRun + "/" + state.selectedIter] : null;
+    var tabs = el("div", { className: "tabs" }, FILES.map(function (f) {
+      return el("button", { type: "button", className: "tab" + (f === state.file ? " active" : ""), onClick: function () { selectFile(f); }, text: f });
+    }));
+    var toggleInput = el("input", { type: "checkbox", onChange: function (e) { toggleDiff(e.target.checked); } });
+    toggleInput.checked = state.showDiff;
+    tabs.appendChild(el("label", { className: "toggle" }, toggleInput, "diff vs previous"));
+    var pre = el("pre", { className: "code" });
+    if (!data) {
+      pre.appendChild(el("span", { className: "hdr", text: "No artifact loaded." }));
+    } else if (state.showDiff) {
+      var diff = state.diffCache[state.selectedRun + "/" + state.selectedIter + "/" + state.file];
+      if (diff == null) pre.appendChild(el("span", { className: "hdr", text: "Loading diff…" }));
+      else if (diff === "") pre.appendChild(el("span", { className: "hdr", text: state.selectedIter === 1 ? "Iteration 1 has no previous iteration to diff against." : "No changes to " + state.file + " in this iteration." }));
+      else renderDiffLines(pre, diff);
+    } else {
+      pre.textContent = data.artifact[ARTIFACT_KEY[state.file]] || "";
+    }
+    return el("section", { className: "panel" }, el("h3", {}, "Code", el("span", { className: "hint", text: state.selectedIter != null ? "iteration " + state.selectedIter : "" })), tabs, pre);
+  }
+
+  function renderDiffLines(pre, diff) {
+    diff.split("\n").forEach(function (line) {
+      var cls = "ln";
+      if (line.indexOf("+++") === 0 || line.indexOf("---") === 0) cls += " hdr";
+      else if (line.indexOf("@@") === 0) cls += " hunk";
+      else if (line.charAt(0) === "+") cls += " add";
+      else if (line.charAt(0) === "-") cls += " del";
+      pre.appendChild(el("span", { className: cls, text: line.length ? line : " " }));
+    });
+  }
+
+  function renderCheckpoints() {
+    var section = el("section", { className: "panel" }, el("h3", {}, "Checkpoints", el("span", { className: "hint", text: state.history.length + " recorded" })));
+    if (!state.history.length) {
+      section.appendChild(el("div", { className: "empty", text: "No checkpoint history for this run." }));
+      return section;
+    }
+    state.history.forEach(function (h) {
+      section.appendChild(el("div", { className: "cp" },
+        el("span", { className: "step", text: "#" + h.step }),
+        el("span", { className: "node", text: h.node || "—" }),
+        el("span", {}, badge(h.status || "unknown"), " ", el("span", { className: "cid", text: "iter " + (h.iteration != null ? h.iteration : "–") })),
+        el("span", { className: "cid", title: h.checkpoint_id, text: shortId(h.checkpoint_id) }),
+        el("span", { className: "when", text: fmtTime(h.created_at) })));
+    });
+    return section;
+  }
+
+  function renderDecision(run) {
+    var form = el("form", { className: "decision" });
+    form.addEventListener("submit", function (e) { e.preventDefault(); });
+    var approver = el("input", { name: "approver", type: "text", placeholder: "your name", autocomplete: "off", required: "required" });
+    var note = el("textarea", { name: "note", placeholder: "optional note recorded with the decision" });
+    approver.value = state.form.approver;
+    note.value = state.form.note;
+    approver.addEventListener("input", function () { state.form.approver = approver.value; });
+    note.addEventListener("input", function () { state.form.note = note.value; });
+    form.appendChild(el("label", {}, "Approver", approver));
+    form.appendChild(el("label", {}, "Note", note));
+    var approveBtn = el("button", { type: "button", className: "btn approve", text: "Approve and publish", onClick: function () { submitDecision("approve", form); } });
+    var rejectBtn = el("button", { type: "button", className: "btn reject", text: "Reject", onClick: function () { submitDecision("reject", form); } });
+    approveBtn.disabled = rejectBtn.disabled = state.busy;
+    var actions = el("div", { className: "actions" }, approveBtn, rejectBtn);
+    if (state.decisionMsg) actions.appendChild(el("span", { className: "msg " + state.decisionMsg.kind, text: state.decisionMsg.text }));
+    form.appendChild(actions);
+    return el("section", { className: "panel" },
+      el("h3", {}, "Decision", el("span", { className: "hint", text: "iteration " + run.iterations + " passed all checks — awaiting a human" })),
+      form);
+  }
+
+  function renderDecisionRecord(run) {
+    return el("section", { className: "panel" },
+      el("h3", {}, "Decision"),
+      el("div", { className: "kv" }, badge(run.status), " by ", el("b", { text: run.approved_by || "—" }),
+        run.decision_note ? el("span", { className: "mono", text: " · " + run.decision_note }) : null),
+      state.decisionMsg ? el("div", { className: "msg " + state.decisionMsg.kind, text: state.decisionMsg.text }) : null);
+  }
+
+  // ------------------------------------------------------------------ boot
+  document.getElementById("refresh-btn").addEventListener("click", function () { refresh(); });
+  refresh();
+})();
+</script>
+</body>
+</html>

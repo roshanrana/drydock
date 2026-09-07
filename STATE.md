@@ -1,13 +1,13 @@
 # STATE — DRYDOCK
 
-**Phase:** 4 → 5 (guardrails done, implementation waves running)
+**Phase:** 5 → 6 (implementation complete except bench; validation and hardening)
 **Gate command:** `uv run python scripts/check.py` (or `make check`)
 **Updated:** 2026-09-07
 
 ## Now / next
 
-- Now: Wave 2 (T-005 graph, T-006 dashboard, T-007 MCP server) running in parallel; T-008 done early.
-- Next: Wave 3 (T-009 bench, T-010 Airflow profile), then T-011 ship.
+- Now: T-009 bench + code/security review running in parallel. Repo gate steps 1-3 green: 455 tests, 99 % coverage.
+- Next: T-011 ship report, CI on GitHub.
 
 ## Task log
 
@@ -18,13 +18,13 @@
 | T-002 | done | harness: 6 checks, sandbox, shim, 74 tests |
 | T-003 | done | providers: fake/templates/LLM/backends, 96 tests |
 | T-004 | done | MCP sources server + toolbox, 81 tests |
-| T-005 | in_progress | |
-| T-006 | in_progress | |
-| T-007 | in_progress | |
+| T-005 | done | graph/store/service/CLI, 66 tests, real interrupt gate |
+| T-006 | done | dashboard API + trace viewer, 25 tests |
+| T-007 | done | DRYDOCK MCP server, 7 tools, docs/mcp.md |
 | T-008 | done | README body, serving.md, runbook.md |
-| T-009 | todo | |
-| T-010 | todo | |
-| T-011 | todo | |
+| T-009 | in_progress | |
+| T-010 | done | Airflow compose profile validated, deploy/README |
+| T-011 | in_progress | reviewers running |
 
 ## Deviations
 

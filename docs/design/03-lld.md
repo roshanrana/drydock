@@ -292,6 +292,7 @@ build_pipeline(client: str, provider: str = "fake", max_iterations: int = 3) -> 
 list_runs(limit: int = 20) -> {"runs": [...]}
 get_run(run_id: str) -> {"run": RunRecord, "iterations": [{"iteration","passed","errors":[...]}]}
 get_iteration(run_id: str, iteration: int) -> {"artifact": {...}, "report": {...}}
+get_history(run_id: str) -> {"history": [...]}      # checkpoint list from RunService.history
 approve_run(run_id: str, approver: str, note: str = "") -> RunRecord dict
 reject_run(run_id: str, approver: str, note: str) -> RunRecord dict
 def main() -> None   # `drydock mcp` / python -m drydock.mcp.server

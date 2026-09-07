@@ -1,6 +1,6 @@
 # T-007 — DRYDOCK MCP server
 
-**Wave:** 2 · **Depends on:** T-004 (SDK patterns), T-005 service contract (code against LLD §7.3; integrate when it lands) · **Status:** todo
+**Wave:** 2 · **Depends on:** T-004 (SDK patterns), T-005 service contract (code against LLD §7.3; integrate when it lands) · **Status:** done
 
 ## Goal
 Any MCP client (Claude Desktop, Cursor, a script) can start a build, inspect a run's
@@ -31,3 +31,11 @@ uv run pytest tests/test_mcp_server.py -q --cov=drydock.mcp.server --cov-report=
 ```
 
 ## Handoff notes (≤10 lines)
+- Validation (2026-09-07): ruff `All checks passed!` / `13 files already formatted`; mypy `Success: no issues found in 4 source files`; pytest `31 passed, 1 skipped`; coverage `drydock\mcp\server.py 101 stmts, 0 miss, 100%`.
+- Seventh tool: LLD §6.3 lists six; `get_history(run_id)` (wraps `RunService.history`) was added to reach the seven the acceptance criteria require. Update §6.3 if a different seventh was intended.
+- `drydock/cli.py` did not exist, so no `mcp` command was wired. T-005: add `mcp` command whose body is `from drydock.mcp.server import main; main()`. `python -m drydock.mcp.server` works today; `docs/mcp.md` documents both invocations.
+- `main()` lazily imports `drydock.graph.service.RunService` / `drydock.graph.store.RunStore` and builds `RunStore(db_path, runs_dir)` then `RunService(store=store, db_path=db_path)`; parent dirs are created. Env: `DRYDOCK_DB_PATH`, `DRYDOCK_RUNS_DIR` (defaults `drydock.paths.DB_PATH`/`RUNS_DIR`).
+- The skipped test is the stdio smoke test (`drydock.graph` absent at validation time); it self-enables via `importlib.util.find_spec("drydock.graph.service")` once T-005 lands. The two `main()` unit tests inject fake `drydock.graph.*` modules into `sys.modules` and stay valid afterwards.
+- `build_server` types its argument as the structural `RunServiceLike` Protocol (`store` property with `list_iterations`/`load_iteration`, plus `start_run`, `decide`, `get_run`, `list_runs`, `history`). If the real `RunService` deviates from LLD §7.3 signatures, mypy on `drydock/mcp` will flag it at `_build_service` — that is the integration signal, not a bug in the server.
+- Error dicts are `{"error": "<ExceptionType>: <message>"}` for every exception (DrydockError or not); `approver`/`note` are stripped and required non-empty before `decide` is ever called; `max_iterations`/`limit` must be >= 1.
+- Full suite: 2 pre-existing failures in `tests/test_dashboard.py` (T-006 datetime `Z` vs `+00:00`), unrelated to this task.

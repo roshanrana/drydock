@@ -1,6 +1,6 @@
 # T-006 — Dashboard API and trace viewer
 
-**Wave:** 2 · **Depends on:** T-005 store/service contract (code against LLD §7.2–7.3; integrate when T-005 lands) · **Status:** todo
+**Wave:** 2 · **Depends on:** T-005 store/service contract (code against LLD §7.2–7.3; integrate when T-005 lands) · **Status:** done
 
 ## Goal
 A reviewer opens one page and sees every run, every iteration's six checks, the findings,
@@ -30,3 +30,10 @@ uv run pytest tests/test_dashboard.py -q --cov=drydock.dashboard --cov-report=te
 ```
 
 ## Handoff notes (≤10 lines)
+- Validation: `ruff check` All checks passed · `ruff format --check` 12 files already formatted · `mypy drydock/dashboard` Success: no issues found in 2 source files · `pytest tests/test_dashboard.py` 25 passed · coverage `app.py` 76 stmts 0 miss 100 %, TOTAL 100 %.
+- Service is typed structurally (`RunServiceLike` / `RunStoreLike` Protocols in `app.py`); the real `RunService` needs no adapter. `drydock/graph/` was not read or touched.
+- ORCHESTRATOR: `drydock/cli.py` did not exist, so AC 5 is not wired. `serve` body should be: `from drydock.dashboard import serve; serve(RunService(store=RunStore()), port=port)` (binds 127.0.0.1).
+- Unknown iteration → 404 via `list_iterations` membership check, so the store's own behaviour for a missing iteration never leaks as a 500.
+- Dict-shaped payloads (`/history`, `iterations` summaries with nested `Finding`s) are dumped via a Pydantic `TypeAdapter` in JSON mode so datetimes serialise as `...Z` like `RunRecord`.
+- UI verified in-browser against the stub: run list, chips, findings, code tabs, +/- diff colouring, checkpoints, approve flow; typed form input and focus survive the 5 s refresh.
+- Auto-refresh stops once every run is terminal (status line says so); the Refresh button restarts it.

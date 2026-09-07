@@ -1,6 +1,6 @@
 # T-005 — Graph, store, service, events, CLI core
 
-**Wave:** 2 · **Depends on:** T-001, T-002, T-003, T-004 · **Status:** todo
+**Wave:** 2 · **Depends on:** T-001, T-002, T-003, T-004 · **Status:** done
 
 ## Goal
 The loop itself: a LangGraph `StateGraph` with a SQLite checkpointer that plans, generates,
@@ -53,3 +53,12 @@ uv run drydock build acme-treasury --provider fake && uv run drydock runs
 ```
 
 ## Handoff notes (≤10 lines)
+- Validation 2026-09-07 (Windows 11, py3.12): `ruff check` + `ruff format --check` → `All checks passed!` / `69 files already formatted`; `mypy drydock` → `Success: no issues found in 32 source files`; `pytest --cov=drydock` → 455 passed (66 in test_graph/test_store/test_cli), `TOTAL 2492 stmts, 35 miss, 99%` (graph/* 99–100 %, events 100 %, cli 97 % — only the serve/mcp/bench bodies are uncovered); `drydock build acme-treasury --provider fake && drydock runs` → `awaiting_approval`, 1 iteration.
+- `RunStore` / `RunService` signatures are exactly LLD §7.2/§7.3. Additions only: `close()` + context-manager support on both (close them in fixtures or Windows cannot delete the tmp DB), `RunStore.runs_dir` / `RunStore.iteration_dir(run_id, n)`, `RunService.store` (dashboard/MCP use `service.store.list_iterations/load_iteration/diff`). T-006 and T-007 already run unchanged against it.
+- `history()` is oldest-first (ascending `step`) and carries an extra `next` key; step −1 is LangGraph's input checkpoint (`state_at(-1) == {}`); `state_at` of a missing step raises `DrydockError`. `history`/`state_at` build an inspection graph with `_InertToolBox` (no MCP session spawned).
+- Never resume the graph with an unvalidated payload: LangGraph 1.2 persists the resume value before the node runs, so a `DrydockError` from `await_approval` on resume wedges the thread for good. `RunService.decide` validates status, decision and approver *before* `Command(resume=...)`; always go through it.
+- `await_approval` re-runs from the top on resume, so its pre-interrupt side effects are guarded by a store status check; `publish` reads approver/note from the store record (GraphState has no approver field). Runs that raise inside a node are marked `FAILED` and get a `{"node": "failed"}` event, then the exception propagates.
+- Per-run files: `runs/<run_id>/events.jsonl` (`EventWriter`; provider `on_usage` → `llm_usage` events) and `runs/<run_id>/iter-N/{pipeline.py,dag.py,mapping.yaml,artifact.json,report.json,sandbox/}`; `deploy/<client>/{pipeline.py,dag.py,mapping.yaml,approval.json}` on approve only.
+- CLI global options `--db/--runs-dir/--deploy-dir/--corpus-root` (env `DRYDOCK_DB`, `DRYDOCK_RUNS_DIR`, `DRYDOCK_DEPLOY_DIR`, `DRYDOCK_CORPUS_ROOT`) go *before* the subcommand. Stubs: `serve` → `drydock.dashboard.app.create_app(service)` under uvicorn; `mcp` → `drydock.mcp.server.main()`; `bench` → `drydock.bench.main(out=Path)` — T-009 must expose `main(out: Path)` or adjust `cli.bench`.
+- The checkpointer serde allowlists the contract types (`CHECKPOINT_TYPES` in `graph/service.py`); any new model that lands in `GraphState` must be added there or LangGraph warns now and blocks later.
+- Removed T-004's `_FallbackCorpus` shim and its two `*fallback*` tests as instructed; `ToolBox.call` was already positional-only, no change needed in `drydock/providers`.

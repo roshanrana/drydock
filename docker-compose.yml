@@ -1,0 +1,43 @@
+# DRYDOCK — opt-in Airflow profile (docs/tasks/T-010, ADR-004).
+#
+# The offline gate never touches this file: nothing here starts unless you pass
+# `--profile airflow`. The service exists to prove that the DAGs DRYDOCK publishes under
+# deploy/<client>/ load in a real Airflow scheduler, not only under the harness stub.
+#
+#   docker compose --profile airflow up            # UI on http://localhost:8080
+#   DRYDOCK_CLIENT=northwind-custody docker compose --profile airflow up
+#   scripts/airflow_smoke.sh [client]              # headless parse check, no server
+#
+# Why DAGS_FOLDER points at ONE client directory
+# ----------------------------------------------
+# Every generated dag.py does a bare `import pipeline`, expecting its sibling pipeline.py.
+# Airflow puts DAGS_FOLDER itself on sys.path but not its subdirectories, so with
+# /opt/airflow/dags as the folder, deploy/<client>/dag.py could not import
+# deploy/<client>/pipeline.py. And because every client ships a module called
+# `pipeline`, putting several client directories on sys.path at once would make all DAGs
+# in one parser process import whichever pipeline.py came first. Selecting one client per
+# compose invocation is the simplest arrangement that is correct without changing the
+# generated code. The whole deploy/ tree is still mounted so approval.json and the other
+# clients are visible inside the container. See deploy/README.md.
+
+name: drydock
+
+services:
+  airflow:
+    profiles: ["airflow"]
+    # Verified 2026-09-07 via `docker buildx imagetools inspect` (linux/amd64 + linux/arm64).
+    image: apache/airflow:2.10.5-python3.12
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      # One published client at a time (see header). Override: DRYDOCK_CLIENT=<client>.
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags/${DRYDOCK_CLIENT:-acme-treasury}
+      # Standalone mode: SQLite metadata DB and SequentialExecutor inside the container.
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+    volumes:
+      # Read-only: Airflow never writes into the DAGs tree, and DRYDOCK's publish node is
+      # the only writer of deploy/ (deploy/README.md).
+      - ./deploy:/opt/airflow/dags:ro
+    ports:
+      - "8080:8080"

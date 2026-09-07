@@ -13,18 +13,15 @@ root is taken from the ``DRYDOCK_CORPUS_ROOT`` environment variable when set.
 from __future__ import annotations
 
 import hashlib
-import importlib
-import json
 import os
 import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Protocol, cast
 
-import yaml
 from mcp.server.mcpserver import MCPServer
-from pydantic import BaseModel, ConfigDict
 
+from drydock import corpus
 from drydock.models import FeedSpec, SampleProfile
 
 SERVER_NAME = "drydock-sources"
@@ -40,7 +37,7 @@ _INSTRUCTIONS = (
 
 
 # --------------------------------------------------------------------------- #
-# Corpus access (real drydock.corpus when present, private fallback otherwise)  #
+# Corpus access                                                                #
 # --------------------------------------------------------------------------- #
 
 
@@ -59,61 +56,9 @@ class _CorpusApi(Protocol):
     def list_samples(self, client: str, root: Path) -> list[Path]: ...
 
 
-_CONTRACT_BLOCK = re.compile(r"```yaml[ \t]+feed-contract[ \t]*\r?\n(.*?)\r?\n```", re.DOTALL)
-
-
-class _FallbackManifest(BaseModel):
-    """Just enough of ``corpus.Manifest`` to serve ``profile_sample``."""
-
-    model_config = ConfigDict(frozen=True, extra="ignore")
-
-    client: str
-    samples: tuple[SampleProfile, ...]
-
-
-class _FallbackCorpus:
-    """Private stand-in for ``drydock.corpus`` used until T-001 lands.
-
-    T-005: delete this class (and the ImportError branch in ``_corpus_api``) once
-    ``drydock/corpus.py`` exists; the tools only need the five functions of ``_CorpusApi``.
-    """
-
-    @staticmethod
-    def list_clients(root: Path) -> list[str]:
-        return sorted(p.name for p in root.iterdir() if (p / "spec.md").is_file())
-
-    @staticmethod
-    def load_spec(client: str, root: Path) -> FeedSpec:
-        text = (root / client / "spec.md").read_text(encoding="utf-8")
-        match = _CONTRACT_BLOCK.search(text)
-        if match is None:
-            raise ValueError(f"spec.md for {client!r} has no fenced yaml feed-contract block")
-        return FeedSpec.model_validate(yaml.safe_load(match.group(1)))
-
-    @staticmethod
-    def load_manifest(client: str, root: Path) -> _FallbackManifest:
-        raw = json.loads((root / client / "manifest.json").read_text(encoding="utf-8"))
-        return _FallbackManifest.model_validate(raw)
-
-    @staticmethod
-    def samples_dir(client: str, root: Path) -> Path:
-        return root / client / "samples"
-
-    @staticmethod
-    def list_samples(client: str, root: Path) -> list[Path]:
-        folder = root / client / "samples"
-        if not folder.is_dir():
-            return []
-        return sorted(p for p in folder.iterdir() if p.is_file())
-
-
 def _corpus_api() -> _CorpusApi:
-    """Import ``drydock.corpus`` lazily so this module loads before T-001 is merged."""
-    try:
-        module = importlib.import_module("drydock.corpus")
-    except ImportError:
-        return _FallbackCorpus()
-    return cast(_CorpusApi, module)
+    """``drydock.corpus`` viewed through the five-function protocol the tools need."""
+    return cast(_CorpusApi, corpus)
 
 
 # --------------------------------------------------------------------------- #

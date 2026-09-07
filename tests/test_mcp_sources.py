@@ -297,40 +297,6 @@ def test_profile_sample_unknown_sample_returns_error(server: MCPServer[Any]) -> 
 
 
 # --------------------------------------------------------------------------- #
-# Fallback loader (until drydock.corpus exists; T-005 removes it)              #
-# --------------------------------------------------------------------------- #
-
-
-def test_tools_work_through_fallback_loader_when_corpus_module_is_absent(
-    corpus_root: Path, manifest_profile: dict[str, Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def no_corpus(name: str) -> Any:
-        raise ImportError(name)
-
-    monkeypatch.setattr(sources_server.importlib, "import_module", no_corpus)
-    assert isinstance(sources_server._corpus_api(), sources_server._FallbackCorpus)
-    server = build_server(corpus_root)
-
-    assert run(call(server, "list_clients")) == {"clients": [CLIENT]}
-    spec = FeedSpec.model_validate(run(call(server, "read_spec", client=CLIENT))["contract"])
-    assert spec.expected_row_count == 6
-    assert run(call(server, "list_samples", client=CLIENT))["samples"][0]["name"] == SAMPLE
-    peek = run(call(server, "peek_sample", client=CLIENT, name=SAMPLE, rows=2))
-    assert peek["lines"] == list(CSV_LINES[:2])
-    assert run(call(server, "profile_sample", client=CLIENT, name=SAMPLE)) == manifest_profile
-
-
-def test_fallback_loader_handles_missing_samples_dir_and_contract(tmp_path: Path) -> None:
-    (tmp_path / "bare").mkdir()
-    _write(tmp_path / "bare" / "spec.md", "# no block\n")
-    fallback = sources_server._FallbackCorpus()
-
-    assert fallback.list_samples("bare", tmp_path) == []
-    with pytest.raises(ValueError, match="feed-contract"):
-        fallback.load_spec("bare", tmp_path)
-
-
-# --------------------------------------------------------------------------- #
 # McpToolBox (in-memory)                                                       #
 # --------------------------------------------------------------------------- #
 

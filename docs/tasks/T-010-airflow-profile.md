@@ -1,6 +1,6 @@
 # T-010 — Airflow compose profile and deploy README
 
-**Wave:** 3 · **Depends on:** T-005 · **Status:** todo
+**Wave:** 3 · **Depends on:** T-005 · **Status:** done
 
 ## Goal
 Prove the generated DAGs are real Airflow DAGs: a compose profile mounts `deploy/` as the
@@ -26,3 +26,11 @@ git status --short
 ```
 
 ## Handoff notes (≤10 lines)
+- `docker-compose.yml`: service `airflow` under `profiles: ["airflow"]`, `apache/airflow:2.10.5-python3.12` (verified 2026-09-07 via `docker buildx imagetools inspect`, linux/amd64+arm64; `2.11.2-python3.12` also exists per Docker Hub tag API), `command: standalone`, `LOAD_EXAMPLES=false`, `./deploy:/opt/airflow/dags:ro`, port 8080.
+- Import problem: generated `dag.py` does a bare `import pipeline`; Airflow puts `DAGS_FOLDER` on `sys.path` but not subdirs, and every client's module is named `pipeline`, so multi-client on one `sys.path` would silently bind all DAGs to the first `pipeline.py`.
+- Chosen approach (no template change): `AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags/${DRYDOCK_CLIENT:-acme-treasury}` — one published client per compose invocation; whole `deploy/` still mounted. Limitation recorded in `deploy/README.md`.
+- `docker compose --profile airflow config` validated (Docker Desktop 4.89 / Compose v5.5.0); `DRYDOCK_CLIENT` override and no-profile default (zero services) checked. `docker compose up` / image pull deliberately NOT run.
+- `scripts/airflow_smoke.sh [client]`: headless parse check via `compose run --rm` (`db migrate`, `dags list-import-errors`, `dags list`, `tasks list --tree`); reads `dag_id` from the generated file. Syntax-checked, not executed (needs image pull + a published client).
+- `deploy/README.md`: who writes here (publish only), file list, `approval.json` field table cross-checked against `drydock/graph/nodes.py::publish` as it landed mid-task (keys: run_id, client, approver, note, approved_at, iteration, sha256{file: hex}), Airflow run/verify steps, and an explicit "DRYDOCK deploys nothing" section.
+- `.gitignore` already whitelists `deploy/README.md`. My footprint in `git status`: `docker-compose.yml`, `deploy/README.md`, `scripts/airflow_smoke.sh`, this task pack; other entries there belong to concurrent T-005/T-006/T-007 work.
+- Follow-up: none required; if `publish` changes its `approval.json` keys, update the table in `deploy/README.md`.
