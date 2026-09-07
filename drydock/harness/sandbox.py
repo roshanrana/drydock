@@ -171,6 +171,8 @@ class _WinJob:
     @classmethod
     def create(cls, proc: subprocess.Popen[bytes]) -> tuple[_WinJob | None, str]:
         """Assign ``proc`` to a memory-capped job. Returns (job or None, warning text)."""
+        if sys.platform != "win32":
+            return None, "drydock sandbox: Windows Job Object not applicable on this platform"
         try:
             import ctypes
             from ctypes import wintypes
@@ -240,6 +242,8 @@ class _WinJob:
             return None, f"drydock sandbox: Windows Job Object unavailable ({exc})"
 
     def close(self) -> None:
+        if sys.platform != "win32":
+            return
         try:
             import ctypes
 
@@ -263,7 +267,9 @@ def _popen(command: list[str], workdir: Path, kind: SandboxKind) -> subprocess.P
     """Start the child in its own group/session so a timeout can kill the whole tree."""
     contained = kind == "subprocess"
     on_windows = sys.platform == "win32"
-    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if contained and on_windows else 0
+    creationflags = 0
+    if contained and sys.platform == "win32":
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
     start_new_session = contained and not on_windows
     preexec = _apply_posix_limits if contained and os.name == "posix" else None
     try:

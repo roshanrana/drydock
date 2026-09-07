@@ -2,7 +2,7 @@
 
 Steps (all must pass):
   1. ruff check + ruff format --check
-  2. mypy drydock
+  2. mypy drydock, on the host platform and again targeting linux (CI runs Linux)
   3. pytest with coverage >= 80%
   4. drydock bench  (offline, seeded)  -> metrics/headline.json must not drift
   5. metrics/render.py --check         -> README results card must not drift
@@ -20,6 +20,7 @@ STEPS: list[tuple[str, list[str]]] = [
     ("ruff check", ["uv", "run", "ruff", "check", "."]),
     ("ruff format", ["uv", "run", "ruff", "format", "--check", "."]),
     ("mypy", ["uv", "run", "mypy", "drydock"]),
+    ("mypy (linux target)", ["uv", "run", "mypy", "drydock", "--platform", "linux"]),
     (
         "pytest",
         [
