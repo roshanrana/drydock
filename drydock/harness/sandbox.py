@@ -71,6 +71,19 @@ def _child_env() -> dict[str, str]:
     return {**sandbox_env(), JAIL_ENV_VAR: "1"}
 
 
+def _docker_user_args() -> list[str]:
+    """Run the container as the host user on POSIX.
+
+    With every capability dropped, root inside the container has no ``CAP_DAC_OVERRIDE``
+    and cannot write into a bind-mounted directory owned by the host user; matching the
+    uid/gid makes ``/out`` writable and ``/work`` readable without granting anything back.
+    Docker Desktop on Windows mediates bind mounts itself, so no flag is needed there.
+    """
+    if sys.platform == "win32":
+        return []
+    return ["--user", f"{os.getuid()}:{os.getgid()}"]
+
+
 def docker_argv(workdir: Path, outdir: Path, argv: list[str], *, name: str) -> list[str]:
     """Locked-down ``docker run``: read-only work mount, writable /out, no caps, no network."""
     return [
@@ -79,6 +92,7 @@ def docker_argv(workdir: Path, outdir: Path, argv: list[str], *, name: str) -> l
         "--rm",
         "--name",
         name,
+        *_docker_user_args(),
         "--network",
         "none",
         "--cap-drop",

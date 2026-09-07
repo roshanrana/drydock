@@ -721,7 +721,10 @@ def test_docker_read_only_mount_blocks_writes(tmp_path: Path) -> None:
         outdir=outdir,
     )
     assert result.exit_code != 0
-    assert "Read-only file system" in result.stderr or "Errno 30" in result.stderr
+    # EROFS from the read-only mount, or EACCES when the kernel checks directory
+    # permissions first; either way the write was refused below the guard and jail.
+    denied = ("Read-only file system", "Errno 30", "Permission denied", "Errno 13")
+    assert any(marker in result.stderr for marker in denied), result.stderr[-400:]
     assert not (tmp_path / "escape.txt").exists()
 
 
