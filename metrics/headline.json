@@ -1,0 +1,132 @@
+{
+  "kpis": {
+    "scenarios": {
+      "label": "Scenarios as declared",
+      "value": "6 / 6",
+      "note": "final run status matched each manifest's expected_outcome: pass = approved at iteration 1, heal = approved after repair, escalate = escalated at the 3-iteration budget",
+      "accent": "teal"
+    },
+    "first_pass_rate": {
+      "label": "First-pass rate",
+      "value": "1 / 6",
+      "note": "runs whose iteration-1 harness report passed (acme-treasury); 4 scenarios inject a defect on purpose",
+      "accent": "blue"
+    },
+    "healed_rate": {
+      "label": "Healed",
+      "value": "4 / 4",
+      "note": "heal scenarios repaired and approved within 3 iterations (blue-harbour-fx, kestrel-payments, northwind-custody, orion-prime)",
+      "accent": "violet"
+    },
+    "adversarial_rejected": {
+      "label": "Adversarial rejected",
+      "value": "5 / 5",
+      "note": "hand-written almost-right artifacts whose harness report failed on every check their expect.json says must fail",
+      "accent": "amber"
+    },
+    "mean_iterations": {
+      "label": "Mean iterations",
+      "value": "2.00",
+      "note": "generate/evaluate iterations per run, 6 runs, budget 3",
+      "accent": "blue"
+    },
+    "checkpoints": {
+      "label": "Checkpoints",
+      "value": "59",
+      "note": "LangGraph checkpoints across 6 runs via service.history, counting every step including each run's step -1 input checkpoint",
+      "accent": "teal"
+    }
+  },
+  "bars": {
+    "title": "Defects caught by check (40 error findings across 12 iteration reports and 5 adversarial reports)",
+    "rows": [
+      {
+        "label": "H1 runtime",
+        "value": 2,
+        "max": 40,
+        "display": "2 of 40 error findings",
+        "accent": "red"
+      },
+      {
+        "label": "H2 schema",
+        "value": 4,
+        "max": 40,
+        "display": "4 of 40 error findings",
+        "accent": "amber"
+      },
+      {
+        "label": "H3 completeness",
+        "value": 6,
+        "max": 40,
+        "display": "6 of 40 error findings",
+        "accent": "blue"
+      },
+      {
+        "label": "H4 drift",
+        "value": 25,
+        "max": 40,
+        "display": "25 of 40 error findings",
+        "accent": "violet"
+      },
+      {
+        "label": "H5 latency",
+        "value": 2,
+        "max": 40,
+        "display": "2 of 40 error findings",
+        "accent": "amber"
+      },
+      {
+        "label": "H6 dag contract",
+        "value": 1,
+        "max": 40,
+        "display": "1 of 40 error findings",
+        "accent": "teal"
+      }
+    ]
+  },
+  "facts": {
+    "title": "Replay evidence",
+    "rows": [
+      {
+        "label": "MCP tool calls made",
+        "value": "18 over an in-memory MCP session (list_samples, peek_sample, profile_sample), recorded in each IngestionPlan.tool_calls",
+        "status": "ok"
+      },
+      {
+        "label": "Escalations",
+        "value": "1 of 6: meridian-legacy, spec contradicts sample",
+        "status": "ok"
+      },
+      {
+        "label": "Artifacts published",
+        "value": "5 clients under deploy/ (acme-treasury, blue-harbour-fx, kestrel-payments, northwind-custody, orion-prime), each with pipeline.py, dag.py, mapping.yaml and approval.json",
+        "status": "ok"
+      },
+      {
+        "label": "Sandbox kind",
+        "value": "subprocess: python -I in a scratch directory with a minimal environment, 17 harness reports",
+        "status": "ok"
+      },
+      {
+        "label": "Generated code lines",
+        "value": "1689 lines across the final pipeline.py, dag.py and mapping.yaml of 6 runs",
+        "status": "ok"
+      },
+      {
+        "label": "Live provider accuracy",
+        "value": "bench runs the deterministic fake provider only; Ollama, vLLM, Bedrock and Anthropic backends are not scored offline",
+        "status": "pending"
+      },
+      {
+        "label": "Docker sandbox",
+        "value": "harness supports sandbox=docker (python:3.12-slim, --network none); the bench always uses subprocess so its output is identical with or without Docker",
+        "status": "pending"
+      },
+      {
+        "label": "Airflow real import",
+        "value": "scripts/airflow_smoke.sh imports deploy/*/dag.py under real Airflow; not run by the offline bench",
+        "status": "pending"
+      }
+    ]
+  }
+}

@@ -24,7 +24,11 @@ class SandboxError(DrydockError):
 
 
 class SandboxTimeout(SandboxError):  # noqa: N818 - name frozen by LLD section 8
-    """The candidate pipeline exceeded the sandbox wall-clock budget."""
+    """The candidate pipeline exceeded the sandbox wall-clock budget.
+
+    ``run_in_sandbox`` reports a timeout as ``SandboxResult.timed_out`` so the harness can
+    turn it into an H1 finding; this class is reserved for callers that need to raise.
+    """
 
 
 class RunNotFound(DrydockError):  # noqa: N818 - name frozen by LLD section 8

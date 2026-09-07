@@ -62,3 +62,16 @@ pin is now the client's asserted `expected_row_count` when the contract declares
 slice so a digit bleeds into the code (H2). (4) The adversarial case expecting H1 and H5 could
 only ever show H1 because the guard blocks execution; it is split into `slow_network_import`
 (H1) and `sleeps_past_budget` (H5), five cases in all.
+
+## ADR-008 — Security review findings drive a three-layer sandbox (2026-09-07)
+
+An independent security review ran live payloads through `harness.evaluate` and showed that
+the static AST guard alone was not a security boundary: an attribute hop (`os.path` → `os`)
+reached `os.system`, and reads outside the scratch directory were unrestricted, so a hostile
+pipeline could exfiltrate host files into harness evidence and from there into a repair
+prompt. The fix (T-012) is defense in depth: a stricter static guard (attribute and name
+denylists), a runtime jail installed by the runner before the pipeline is imported (jailed
+`open`, capability-stripped `os`, poisoned dangerous modules, an import finder), and process
+containment (process-group kill, read-only Docker mounts with cap/pids/memory limits, a
+Windows Job Object memory cap). Residual limits are published in `docs/security.md`.
+`approval.json` hashes are described as an audit trail, not a signature.

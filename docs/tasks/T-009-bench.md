@@ -1,6 +1,6 @@
 # T-009 — Bench, headline.json, results card
 
-**Wave:** 3 · **Depends on:** T-005 · **Status:** todo
+**Wave:** 3 · **Depends on:** T-005 · **Status:** done
 
 ## Goal
 One command replays the whole corpus offline and writes the numbers the README shows.
@@ -33,3 +33,10 @@ uv run python scripts/check.py
 ```
 
 ## Handoff notes (≤10 lines)
+- Validation 2026-09-07 (Windows 11, py3.12): `uv run python scripts/check.py` -> ruff `All checks passed!`, ruff format clean, `mypy drydock` `Success: no issues found in 33 source files`, `pytest --cov=drydock` `473 passed`, `TOTAL 2707 stmts, 36 miss, 99%` (bench.py 100 %), `drydock bench` -> `scenarios 6 / 6, adversarial 5 / 5, checkpoints 59`, `git diff --exit-code -- metrics/headline.json` passes (file is new/untracked until the orchestrator commits, so the diff step is trivially clean this once), `metrics/render.py --check` -> `metrics card is current`, `all checks passed`.
+- KPIs (all computed from run records, iteration reports and harness reports): scenarios 6 / 6, first_pass_rate 1 / 6 (acme-treasury), healed_rate 4 / 4, adversarial_rejected 5 / 5, mean_iterations 2.00, checkpoints 59 = `len(service.history(run_id))` summed over the 6 runs, i.e. every LangGraph checkpoint including each run's step -1 input checkpoint (8+10+10+11+10+10).
+- Bars: 40 error-severity findings across 12 iteration reports + 5 adversarial reports (H1 2, H2 4, H3 6, H4 25, H5 2, H6 1); `max` = total. Facts: 18 MCP tool calls (3 per run from `IngestionPlan.tool_calls` at the final checkpoint), 1 escalation, 5 clients published, sandbox subprocess over 17 reports, 1689 generated lines; live provider / Docker / Airflow rows are always `pending` so Docker presence cannot change the bytes.
+- `drydock.bench.main(out, *, keep=False, corpus_root, seed=42, max_iterations=3, workdir=None, echo=typer.echo) -> dict` runs in `tempfile.mkdtemp(prefix="drydock-bench-")` (or `workdir`), closes `RunService`/`RunStore`, then `shutil.rmtree` unless `keep`. `headline(BenchResult)` and `dump_headline` are pure so tests can hit edge cases without a replay.
+- Deviation: `cli.bench` gained a `--keep` option (one parameter + `keep=keep` pass-through, nothing else in `cli.py`) because acceptance criterion 1 names it; revert those two lines if the CLI must stay untouched, `main(out=...)` still works.
+- Byte-stability proven by `tests/test_bench.py` (two runs into `tmp_path`, bytes equal; no absolute path, `wall_ms`, `ts` or date in the file) and by identical sha256 of `metrics/headline.json` (1c6613e9...) and `docs/assets/metrics.svg` (89236577...) across three bench invocations. Bench wall time is ~16 s (sleeps_past_budget sleeps 6 s x 2 samples); the test module runs it twice, so `tests/test_bench.py` costs ~35 s of the 70 s pytest step.
+- `slow_network_import` never gets a sandbox scratch dir: the static AST guard rejects `socket` before execution, so `evaluate` returns without staging; the test asserts 4 adversarial scratch dirs, not 5.

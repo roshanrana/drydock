@@ -1,13 +1,13 @@
 # STATE — DRYDOCK
 
-**Phase:** 5 → 6 (implementation complete except bench; validation and hardening)
+**Phase:** 7 — shipped. `uv run python scripts/check.py` green: 505 tests, 98 % coverage, bench and card drift clean.
 **Gate command:** `uv run python scripts/check.py` (or `make check`)
 **Updated:** 2026-09-07
 
 ## Now / next
 
-- Now: T-009 bench + code/security review running in parallel. Repo gate steps 1-3 green: 455 tests, 99 % coverage.
-- Next: T-011 ship report, CI on GitHub.
+- Now: shipped to GitHub (`roshanrana/drydock`); CI runs the same gate.
+- Next (backlog, none load-bearing): record a live-provider run (Ollama) and publish it as a recorded figure; Docker-sandbox and real-Airflow bench rows; HMAC-signed approvals; add DRYDOCK to the profile README.
 
 ## Task log
 
@@ -22,9 +22,10 @@
 | T-006 | done | dashboard API + trace viewer, 25 tests |
 | T-007 | done | DRYDOCK MCP server, 7 tools, docs/mcp.md |
 | T-008 | done | README body, serving.md, runbook.md |
-| T-009 | in_progress | |
+| T-009 | done | bench: 6/6 scenarios, 5/5 adversarial, 59 checkpoints; card rendered |
 | T-010 | done | Airflow compose profile validated, deploy/README |
-| T-011 | in_progress | reviewers running |
+| T-011 | done | reviews dispositioned, pip-audit clean, ship report, GitHub |
+| T-012 | done | three-layer sandbox; 25 escape tests; docs/security.md |
 
 ## Deviations
 

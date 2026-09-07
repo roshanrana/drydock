@@ -48,7 +48,7 @@ Written by the `publish` node (`drydock/graph/nodes.py`; contract in
 | `note` | Free-text `--note`, may be empty. |
 | `approved_at` | UTC ISO-8601 timestamp (`+00:00` offset) taken when `publish` ran, i.e. moments after the decision. |
 | `iteration` | Which generate/evaluate iteration passed and was approved. |
-| `sha256` | SHA-256 hex digest of each published file, keyed by file name. |
+| `sha256` | SHA-256 hex digest of each published file, keyed by file name. An audit trail for detecting accidental drift, not a cryptographic signature: anyone with write access to this directory could rewrite both file and digest. |
 
 Example (values invented; the shape is what `publish` writes):
 

@@ -30,9 +30,53 @@ and a deterministic fake that the tests, the bench and CI use. The gate is one c
 with no network, no API key and no Docker, and CI runs the same command.
 
 <!-- metrics:start -->
+
+## Results
+
+<img src="docs/assets/metrics.svg" alt="Results card" width="920">
+
+Every figure below was observed by `make bench`, which runs offline with a fixed seed and no API key, and writes `metrics/headline.json`. Every corpus scenario replayed through plan, generate, evaluate and repair with the deterministic provider, plus adversarial pipelines the harness must reject. Rows marked *pending* need hardware, data or a service the offline harness does not have; nothing here is estimated.
+
+| Metric | Value | How it was measured |
+|---|---|---|
+| Scenarios as declared | **6 / 6** | final run status matched each manifest's expected_outcome: pass = approved at iteration 1, heal = approved after repair, escalate = escalated at the 3-iteration budget |
+| First-pass rate | **1 / 6** | runs whose iteration-1 harness report passed (acme-treasury); 4 scenarios inject a defect on purpose |
+| Healed | **4 / 4** | heal scenarios repaired and approved within 3 iterations (blue-harbour-fx, kestrel-payments, northwind-custody, orion-prime) |
+| Adversarial rejected | **5 / 5** | hand-written almost-right artifacts whose harness report failed on every check their expect.json says must fail |
+| Mean iterations | **2.00** | generate/evaluate iterations per run, 6 runs, budget 3 |
+| Checkpoints | **59** | LangGraph checkpoints across 6 runs via service.history, counting every step including each run's step -1 input checkpoint |
+
+**Defects caught by check (40 error findings across 12 iteration reports and 5 adversarial reports)**
+
+| | | |
+|---|---|---|
+| H1 runtime | `█░░░░░░░░░░░░░░░░░░░` | 2 of 40 error findings |
+| H2 schema | `██░░░░░░░░░░░░░░░░░░` | 4 of 40 error findings |
+| H3 completeness | `███░░░░░░░░░░░░░░░░░` | 6 of 40 error findings |
+| H4 drift | `████████████░░░░░░░░` | 25 of 40 error findings |
+| H5 latency | `█░░░░░░░░░░░░░░░░░░░` | 2 of 40 error findings |
+| H6 dag contract | `░░░░░░░░░░░░░░░░░░░░` | 1 of 40 error findings |
+
+**Replay evidence**
+
+| | Status | Evidence |
+|---|---|---|
+| MCP tool calls made | observed | 18 over an in-memory MCP session (list_samples, peek_sample, profile_sample), recorded in each IngestionPlan.tool_calls |
+| Escalations | observed | 1 of 6: meridian-legacy, spec contradicts sample |
+| Artifacts published | observed | 5 clients under deploy/ (acme-treasury, blue-harbour-fx, kestrel-payments, northwind-custody, orion-prime), each with pipeline.py, dag.py, mapping.yaml and approval.json |
+| Sandbox kind | observed | subprocess: python -I in a scratch directory with a minimal environment, 17 harness reports |
+| Generated code lines | observed | 1689 lines across the final pipeline.py, dag.py and mapping.yaml of 6 runs |
+| Live provider accuracy | pending | bench runs the deterministic fake provider only; Ollama, vLLM, Bedrock and Anthropic backends are not scored offline |
+| Docker sandbox | pending | harness supports sandbox=docker (python:3.12-slim, --network none); the bench always uses subprocess so its output is identical with or without Docker |
+| Airflow real import | pending | scripts/airflow_smoke.sh imports deploy/*/dag.py under real Airflow; not run by the offline bench |
+
 <!-- metrics:end -->
 
 ## How it works
+
+<img src="docs/assets/dashboard.png" alt="DRYDOCK review dashboard: a blue-harbour-fx run whose first iteration failed H2, H3 and H4 and whose second iteration passed all six checks" width="920">
+
+*The review dashboard on a self-heal run: iteration 1 parsed the trailer row as data and failed schema, completeness and drift; iteration 2 passed and stopped at the approval gate.*
 
 Agents propose; the harness decides; a human disposes. The graph is a bounded state machine
 rather than a free-running agent, because the loop has to be auditable, resumable across

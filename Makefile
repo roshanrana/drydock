@@ -1,6 +1,6 @@
 # Thin wrapper; the real logic is in scripts/check.py so Windows hosts without GNU make
 # can run `uv run python scripts/check.py` and get the identical gate.
-.PHONY: check lint type test bench bench-check card card-check demo serve mcp
+.PHONY: check lint type test bench bench-check card card-check demo serve mcp audit
 
 check:
 	uv run python scripts/check.py
@@ -34,3 +34,7 @@ serve:
 
 mcp:
 	uv run drydock mcp
+
+audit:
+	uv export --all-extras --no-hashes --format requirements-txt -o .audit-requirements.txt
+	uvx pip-audit -r .audit-requirements.txt --progress-spinner off

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="548" viewBox="0 0 920 548" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="DRYDOCK bench replay results card">
+<rect width="920" height="548" rx="16" fill="#0f172a"/>
+<text x="28" y="48" font-size="22" font-weight="700" fill="#e2e8f0">DRYDOCK bench replay</text>
+<text x="28" y="70" font-size="13" fill="#94a3b8">Every corpus scenario replayed through plan, generate, evaluate and repair with the deterministic provider, plus advers…</text>
+<rect x="28.0" y="90" width="278.7" height="92" rx="10" fill="#1e293b"/>
+<rect x="28.0" y="90" width="4" height="92" rx="2" fill="#2dd4bf"/>
+<text x="44.0" y="114" font-size="12" fill="#94a3b8">Scenarios as declared</text>
+<text x="44.0" y="146" font-size="26" font-weight="700" fill="#2dd4bf">6 / 6</text>
+<text x="44.0" y="168" font-size="10.5" fill="#94a3b8">final run status matched each manifest's expecte…</text>
+<rect x="320.7" y="90" width="278.7" height="92" rx="10" fill="#1e293b"/>
+<rect x="320.7" y="90" width="4" height="92" rx="2" fill="#60a5fa"/>
+<text x="336.7" y="114" font-size="12" fill="#94a3b8">First-pass rate</text>
+<text x="336.7" y="146" font-size="26" font-weight="700" fill="#60a5fa">1 / 6</text>
+<text x="336.7" y="168" font-size="10.5" fill="#94a3b8">runs whose iteration-1 harness report passed (ac…</text>
+<rect x="613.3" y="90" width="278.7" height="92" rx="10" fill="#1e293b"/>
+<rect x="613.3" y="90" width="4" height="92" rx="2" fill="#a78bfa"/>
+<text x="629.3" y="114" font-size="12" fill="#94a3b8">Healed</text>
+<text x="629.3" y="146" font-size="26" font-weight="700" fill="#a78bfa">4 / 4</text>
+<text x="629.3" y="168" font-size="10.5" fill="#94a3b8">heal scenarios repaired and approved within 3 it…</text>
+<rect x="28.0" y="196" width="278.7" height="92" rx="10" fill="#1e293b"/>
+<rect x="28.0" y="196" width="4" height="92" rx="2" fill="#fbbf24"/>
+<text x="44.0" y="220" font-size="12" fill="#94a3b8">Adversarial rejected</text>
+<text x="44.0" y="252" font-size="26" font-weight="700" fill="#fbbf24">5 / 5</text>
+<text x="44.0" y="274" font-size="10.5" fill="#94a3b8">hand-written almost-right artifacts whose harnes…</text>
+<rect x="320.7" y="196" width="278.7" height="92" rx="10" fill="#1e293b"/>
+<rect x="320.7" y="196" width="4" height="92" rx="2" fill="#60a5fa"/>
+<text x="336.7" y="220" font-size="12" fill="#94a3b8">Mean iterations</text>
+<text x="336.7" y="252" font-size="26" font-weight="700" fill="#60a5fa">2.00</text>
+<text x="336.7" y="274" font-size="10.5" fill="#94a3b8">generate/evaluate iterations per run, 6 runs, bu…</text>
+<rect x="613.3" y="196" width="278.7" height="92" rx="10" fill="#1e293b"/>
+<rect x="613.3" y="196" width="4" height="92" rx="2" fill="#2dd4bf"/>
+<text x="629.3" y="220" font-size="12" fill="#94a3b8">Checkpoints</text>
+<text x="629.3" y="252" font-size="26" font-weight="700" fill="#2dd4bf">59</text>
+<text x="629.3" y="274" font-size="10.5" fill="#94a3b8">LangGraph checkpoints across 6 runs via service.…</text>
+<text x="28" y="326" font-size="13" font-weight="600" fill="#e2e8f0">Defects caught by check (40 error findings across 12 iteration reports and 5 adversarial reports)</text>
+<text x="28" y="359.0" font-size="12" fill="#e2e8f0">H1 runtime</text>
+<rect x="328" y="349.0" width="414" height="12" rx="6" fill="#334155"/>
+<rect x="328" y="349.0" width="20.7" height="12" rx="6" fill="#f87171"/>
+<text x="754" y="359.0" font-size="12" fill="#94a3b8">2 of 40 error findings</text>
+<text x="28" y="389.0" font-size="12" fill="#e2e8f0">H2 schema</text>
+<rect x="328" y="379.0" width="414" height="12" rx="6" fill="#334155"/>
+<rect x="328" y="379.0" width="41.4" height="12" rx="6" fill="#fbbf24"/>
+<text x="754" y="389.0" font-size="12" fill="#94a3b8">4 of 40 error findings</text>
+<text x="28" y="419.0" font-size="12" fill="#e2e8f0">H3 completeness</text>
+<rect x="328" y="409.0" width="414" height="12" rx="6" fill="#334155"/>
+<rect x="328" y="409.0" width="62.1" height="12" rx="6" fill="#60a5fa"/>
+<text x="754" y="419.0" font-size="12" fill="#94a3b8">6 of 40 error findings</text>
+<text x="28" y="449.0" font-size="12" fill="#e2e8f0">H4 drift</text>
+<rect x="328" y="439.0" width="414" height="12" rx="6" fill="#334155"/>
+<rect x="328" y="439.0" width="258.8" height="12" rx="6" fill="#a78bfa"/>
+<text x="754" y="449.0" font-size="12" fill="#94a3b8">25 of 40 error findin…</text>
+<text x="28" y="479.0" font-size="12" fill="#e2e8f0">H5 latency</text>
+<rect x="328" y="469.0" width="414" height="12" rx="6" fill="#334155"/>
+<rect x="328" y="469.0" width="20.7" height="12" rx="6" fill="#fbbf24"/>
+<text x="754" y="479.0" font-size="12" fill="#94a3b8">2 of 40 error findings</text>
+<text x="28" y="509.0" font-size="12" fill="#e2e8f0">H6 dag contract</text>
+<rect x="328" y="499.0" width="414" height="12" rx="6" fill="#334155"/>
+<rect x="328" y="499.0" width="10.4" height="12" rx="6" fill="#2dd4bf"/>
+<text x="754" y="509.0" font-size="12" fill="#94a3b8">1 of 40 error findings</text>
+<text x="28" y="538" font-size="11" fill="#94a3b8">Replay evidence: 5 of 8 rows observed offline; the rest are marked pending or not claimed in README.md. Generated by metrics/render.py from metrics/headline.json.</text>
+</svg>

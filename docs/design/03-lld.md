@@ -181,13 +181,15 @@ def evaluate(artifact: PipelineArtifact, spec: FeedSpec, manifest: Manifest, sam
 
 # drydock/harness/sandbox.py
 class SandboxResult(Frozen): exit_code: int; stdout: str; stderr: str; wall_ms: int; timed_out: bool
-def run_in_sandbox(workdir: Path, argv: list[str], *, timeout_s: float, kind: Literal["subprocess","docker"]) -> SandboxResult
+def run_in_sandbox(workdir: Path, argv: list[str], *, timeout_s: float, kind: Literal["subprocess","docker"], outdir: Path | None = None) -> SandboxResult
 ```
 
 Procedure per sample: write `pipeline.py`, `dag.py`, copy sample, copy `runner.py` and the
-`airflow_shim` into `workdir`; run `python -I runner.py pipeline.py <sample> out.json dag.py
-dag_out.json`; parent reads `out.json` (rows) and `dag_out.json` (`{"dag_id","schedule",
-"tasks":[...],"edges":[["extract","transform"],...]}`) and applies checks:
+`airflow_shim` into `workdir`; run `python -I runner.py pipeline.py <sample> dag.py <outdir>`;
+the runner writes `<outdir>/out.json` (rows) and `<outdir>/dag_out.json`
+(`{"dag_id","schedule","tasks":[...],"edges":[["extract","transform"],...]}`) — for the
+subprocess kind `<outdir>` is the work directory, for docker it is a separate writable mount.
+The parent reads them back and applies checks:
 
 | Check | Fails when |
 |---|---|
@@ -199,14 +201,36 @@ dag_out.json`; parent reads `out.json` (rows) and `dag_out.json` (`{"dag_id","sc
 | H6 dag_contract | dag_id/schedule/tasks/edges differ from §3, or dag import fails, or forbidden import found by AST scan of `dag.py` |
 
 `runner.py` imports the pipeline via `importlib`, calls `extract` then `transform`, writes
-JSON, then imports `dag.py` under the shim and dumps the recorded structure. Static
-guard before execution: AST scan of `pipeline.py` rejects imports outside an allowlist
-(`csv, json, decimal, datetime, re, io, os.path, pathlib, typing, dataclasses, collections,
-itertools, functools, math, string, time`) and any `open(..., "w")`. A violation is an H1 error
-with `evidence.forbidden_import`.
+JSON, then imports `dag.py` under the shim and dumps the recorded structure.
 
-Docker kind: `docker run --rm --network none -v <workdir>:/work -w /work python:3.12-slim
-python -I runner.py ...`; skipped (test marked) when the docker binary is absent.
+Sandbox hardening is defence in depth in three layers (see `docs/security.md` for the threat
+model and payload table; T-012):
+
+1. **Static guard — `drydock/harness/guard.py`** (re-exported from `checks.py`). AST scan of
+   `pipeline.py` before execution rejects imports outside the allowlist
+   (`csv, json, decimal, datetime, re, io, pathlib, typing, dataclasses, collections,
+   itertools, functools, math, string, time` — `os.path` was removed; the templates never
+   use it and it enabled an `osp.os` attribute hop), any `open(..., "w"/"a"/"x"/"+")`, any
+   forbidden call (`exec`/`eval`/`__import__`/`getattr`, `os`/`pathlib` mutators such as
+   `unlink`/`mkdir`/`system`/`popen`/`exec*`/`spawn*`), any attribute hop to a module/object
+   (`sys`, `os`, `modules`, `__globals__`, `__subclasses__`, … or any `_`-prefixed
+   attribute), and the bare names `__builtins__`/`__import__`. A violation is an H1 error with
+   `evidence.forbidden_import` / `evidence.forbidden_call`. The same scan runs over `dag.py`
+   (H6).
+2. **Runtime jail — `drydock/harness/runner.py`**, installed in the child before importing
+   the pipeline: `open`/`io.open` confined to reads inside the work directory (writes and
+   outside-reads raise `PermissionError`); dangerous `os` capabilities replaced with a
+   raiser; a denylist of modules poisoned in `sys.modules` and a `sys.meta_path` finder;
+   outputs written through a retained real `open` to `<outdir>`.
+3. **Process containment — `drydock/harness/sandbox.py`**: child in its own process
+   group/session, timeout kills the whole tree (`taskkill /T` / `killpg(SIGKILL)`); POSIX
+   `RLIMIT_AS`/`RLIMIT_FSIZE`/`RLIMIT_NPROC`; a Windows Job Object caps memory (512 MiB,
+   best effort — failures are recorded in `stderr`, never fatal).
+
+Docker kind: `docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges
+--pids-limit 64 --memory 512m --read-only --tmpfs /tmp -v <workdir>:/work:ro -v <outdir>:/out
+-w /work python:3.12-slim python -I runner.py ...`; skipped (test marked) when the docker
+binary is absent.
 
 ## 5. Providers (T-003)
 

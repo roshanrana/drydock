@@ -35,6 +35,8 @@ PIPELINE_FILE = "pipeline.py"
 DAG_FILE = "dag.py"
 OUT_FILE = "out.json"
 DAG_OUT_FILE = "dag_out.json"
+OUTDIR_NAME = "__out__"  # docker: a writable mount separate from the read-only work dir
+DOCKER_OUTDIR = "/out"
 
 
 class ManifestLike(Protocol):
@@ -157,23 +159,31 @@ def _run_sample(
 ) -> SampleRun:
     scratch = root / f"{index:02d}_{sample.stem}"
     _stage(scratch, artifact, sample)
+    if kind == "docker":
+        out_host = scratch / OUTDIR_NAME
+        out_host.mkdir(parents=True, exist_ok=True)
+        outdir_arg = DOCKER_OUTDIR
+    else:
+        out_host = scratch
+        outdir_arg = "."
     argv = [
         *python_argv(kind),
         RUNNER_PATH.name,
         PIPELINE_FILE,
         sample.name,
-        OUT_FILE,
         DAG_FILE,
-        DAG_OUT_FILE,
+        outdir_arg,
     ]
-    result: SandboxResult = run_in_sandbox(scratch, argv, timeout_s=timeout_s, kind=kind)
-    rows, error = _read_rows(scratch / OUT_FILE)
+    result: SandboxResult = run_in_sandbox(
+        scratch, argv, timeout_s=timeout_s, kind=kind, outdir=out_host
+    )
+    rows, error = _read_rows(out_host / OUT_FILE)
     return SampleRun(
         name=sample.name,
         profile=_profile_for(manifest, sample.name),
         result=result,
         rows=rows,
-        dag=_read_dag(scratch / DAG_OUT_FILE),
+        dag=_read_dag(out_host / DAG_OUT_FILE),
         error=error,
     )
 

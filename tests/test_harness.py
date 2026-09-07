@@ -16,6 +16,7 @@ from typing import Any
 
 import pytest
 
+from drydock import corpus
 from drydock.harness import ManifestLike, SandboxError, checks, evaluate, runner, sandbox
 from drydock.harness.checks import SampleRun
 from drydock.harness.sandbox import SandboxResult, run_in_sandbox
@@ -24,8 +25,14 @@ from drydock.models import (
     CheckId,
     CheckResult,
     HarnessReport,
+    IngestionPlan,
     PipelineArtifact,
     Severity,
+)
+from drydock.providers.fake import (
+    FakeProvider,
+    parse_options_from_spec,
+    validations_from_spec,
 )
 from tests.fixtures.manifest_stub import (
     AMOUNT_SUM,
@@ -384,8 +391,6 @@ def test_scan_pipeline_accepts_allowlisted_constructs() -> None:
         "from __future__ import annotations\n"
         "import csv, json, io\n"
         "import collections.abc\n"
-        "from os import path\n"
-        "from os.path import join\n"
         "from pathlib import Path\n"
         "def f(p):\n"
         "    open(p, encoding='utf-8'); open(p); Path(p).open(); io.open(p, 'r')\n"
@@ -575,11 +580,18 @@ def test_python_argv_uses_sys_executable_for_subprocess() -> None:
 
 
 def test_docker_argv_matches_lld(tmp_path: Path) -> None:
-    argv = sandbox.docker_argv(tmp_path, ["python", "-I", "runner.py"], name="drydock-test")
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+    argv = sandbox.docker_argv(tmp_path, outdir, ["python", "-I", "runner.py"], name="drydock-test")
 
     assert argv[:3] == ["docker", "run", "--rm"]
     assert argv[argv.index("--network") + 1] == "none"
-    assert f"{tmp_path.resolve()}:/work" in argv
+    assert argv[argv.index("--cap-drop") + 1] == "ALL"
+    assert argv[argv.index("--pids-limit") + 1] == "64"
+    assert argv[argv.index("--memory") + 1] == "512m"
+    assert "--read-only" in argv
+    assert f"{tmp_path.resolve()}:/work:ro" in argv
+    assert f"{outdir.resolve()}:/out" in argv
     assert argv[argv.index("-w") + 1] == "/work"
     assert argv[-4:] == [sandbox.DOCKER_IMAGE, "python", "-I", "runner.py"]
 
@@ -625,23 +637,92 @@ def test_run_in_sandbox_timeout(tmp_path: Path) -> None:
 def test_docker_timeout_attempts_container_cleanup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls: list[list[str]] = []
+    run_calls: list[list[str]] = []
+    popen_commands: list[list[str]] = []
+
+    class FakePopen:
+        def __init__(self, command: list[str], **_kwargs: Any) -> None:
+            popen_commands.append(list(command))
+            self.pid = 4321
+            self.returncode: int | None = None
+            self._reaped = False
+
+        def communicate(self, timeout: float | None = None) -> tuple[bytes, bytes]:
+            if not self._reaped:
+                self._reaped = True
+                raise subprocess.TimeoutExpired(popen_commands[-1], timeout or 1, output=b"partial")
+            return b"partial", b""
+
+        def poll(self) -> int | None:
+            return self.returncode
+
+        def kill(self) -> None:
+            self.returncode = -9
 
     def fake_run(command: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[bytes]:
-        calls.append(list(command))
-        if command[:2] == ["docker", "run"]:
-            raise subprocess.TimeoutExpired(command, 1, output=b"partial", stderr=None)
+        run_calls.append(list(command))
         return subprocess.CompletedProcess(command, 0, b"", b"")
 
     monkeypatch.setattr(shutil, "which", lambda _name: "/usr/bin/docker")
+    monkeypatch.setattr(subprocess, "Popen", FakePopen)
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     result = run_in_sandbox(tmp_path, ["python", "-I", "runner.py"], timeout_s=1, kind="docker")
 
     assert result.timed_out
     assert result.stdout == "partial"
-    assert calls[1][:3] == ["docker", "rm", "-f"]
-    assert calls[1][3] == calls[0][calls[0].index("--name") + 1]
+    rm_call = next(c for c in run_calls if c[:3] == ["docker", "rm", "-f"])
+    assert rm_call[3] == popen_commands[0][popen_commands[0].index("--name") + 1]
+
+
+@pytest.mark.parametrize("client", corpus.list_clients())
+def test_every_clean_generated_pipeline_passes_all_checks(client: str) -> None:
+    spec = corpus.load_spec(client)
+    plan = IngestionPlan(
+        client=spec.client,
+        feed_name=spec.feed_name,
+        format=spec.format,
+        parse_options=parse_options_from_spec(spec),
+        column_map=spec.columns,
+        validations=validations_from_spec(spec),
+        schedule_cron=spec.schedule_cron,
+    )
+    # iteration=2 => the clean template with no fault injection.
+    artifact = FakeProvider().generate(plan, spec, iteration=2, seed=0, previous=None, report=None)
+    samples = corpus.list_samples(client)
+
+    manifest = corpus.load_manifest(client)
+    report = evaluate(artifact, spec, manifest, samples, iteration=2, timeout_s=FAST_TIMEOUT_S)
+
+    if manifest.scenario.expected_outcome == "escalate":
+        # meridian-legacy is unsatisfiable by design (the spec claims one more row than the
+        # sample holds); the clean template must fail *only* completeness, never a guard or
+        # runtime-jail check, which would signal the hardening broke legitimate generation.
+        assert failing_checks(report) == {CheckId.COMPLETENESS}
+        runtime = result_for(report, CheckId.RUNTIME)
+        assert runtime.passed, [f.message for f in runtime.findings]
+    else:
+        assert report.passed, f"{client}: {[f.message for f in report.errors]}"
+        assert all(c.passed for c in report.checks)
+
+
+def test_docker_read_only_mount_blocks_writes(tmp_path: Path) -> None:
+    if not docker_available():
+        pytest.skip("docker binary or daemon not available")
+    # Exercise the mount itself, below the guard/jail: a plain write to /work must fail
+    # because the work directory is bind-mounted read-only.
+    outdir = tmp_path / "out"
+    outdir.mkdir()
+    result = run_in_sandbox(
+        tmp_path,
+        ["python", "-c", "open('/work/escape.txt', 'w')"],
+        timeout_s=600,
+        kind="docker",
+        outdir=outdir,
+    )
+    assert result.exit_code != 0
+    assert "Read-only file system" in result.stderr or "Errno 30" in result.stderr
+    assert not (tmp_path / "escape.txt").exists()
 
 
 @pytest.mark.skipif(not docker_available(), reason="docker binary or daemon not available")
@@ -680,8 +761,12 @@ def stage(
         dag_source if dag_source is not None else fixture("good_dag.py"), encoding="utf-8"
     )
     shutil.copy(SAMPLE, tmp_path / SAMPLE.name)
-    names = ("pipeline.py", SAMPLE.name, "out.json", "dag.py", "dag_out.json")
-    return [str(tmp_path / name) for name in names]
+    return [
+        str(tmp_path / "pipeline.py"),
+        str(tmp_path / SAMPLE.name),
+        str(tmp_path / "dag.py"),
+        str(tmp_path),
+    ]
 
 
 @pytest.mark.usefixtures("isolated_modules")

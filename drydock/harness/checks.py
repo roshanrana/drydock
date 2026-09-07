@@ -1,20 +1,28 @@
-"""Static AST guard and the six harness checks (LLD section 4).
+"""The six harness checks (LLD section 4).
 
-Everything here is a pure function over source text or sandbox output. Nothing imports
-or executes generated code; the guard runs before ``runner.py`` is ever spawned.
+Everything here is a pure function over sandbox output. Nothing imports or executes
+generated code. The static AST guard (layer 1) lives in :mod:`drydock.harness.guard`;
+its public names are re-exported here so existing callers keep importing them from
+``drydock.harness.checks``.
 """
 
 from __future__ import annotations
 
-import ast
 import re
 import time
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from drydock.harness.guard import (
+    DAG_ALLOWED_MODULES,
+    PIPELINE_ALLOWED_MODULES,
+    scan_dag,
+    scan_pipeline,
+    scan_source,
+)
 from drydock.harness.sandbox import SandboxResult
 from drydock.models import (
     CANONICAL_COLUMNS,
@@ -26,62 +34,6 @@ from drydock.models import (
     Severity,
 )
 
-PIPELINE_ALLOWED_MODULES = frozenset(
-    {
-        "__future__",
-        "csv",
-        "json",
-        "decimal",
-        "datetime",
-        "re",
-        "io",
-        "os.path",
-        "pathlib",
-        "typing",
-        "dataclasses",
-        "collections",
-        "itertools",
-        "functools",
-        "math",
-        "string",
-        "time",  # needed so a slow pipeline (H5) is a latency finding, not a guard hit
-    }
-)
-DAG_ALLOWED_MODULES = frozenset(
-    {"__future__", "airflow", "airflow.operators.python", "datetime", "pipeline"}
-)
-OPEN_LIKE_CALLS = frozenset({"open", "FileIO"})
-FORBIDDEN_CALLS = frozenset(
-    {
-        "exec",
-        "eval",
-        "compile",
-        "__import__",
-        "globals",
-        "locals",
-        "vars",
-        "getattr",
-        "setattr",
-        "delattr",
-        "breakpoint",
-        "input",
-        "write_text",
-        "write_bytes",
-        "unlink",
-        "mkdir",
-        "rmdir",
-        "touch",
-        "rename",
-        "symlink_to",
-        "hardlink_to",
-        "chmod",
-    }
-)
-FORBIDDEN_DUNDERS = frozenset(
-    {"__builtins__", "__import__", "__subclasses__", "__globals__", "__code__", "__loader__"}
-)
-WRITE_MODE_CHARS = frozenset("wax+")
-DYNAMIC_MODE = "<dynamic>"
 TRACEBACK_MARKER = "Traceback (most recent call last)"
 AMOUNT_RE = re.compile(r"^-?\d+\.\d{2}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -106,116 +58,6 @@ class SampleRun:
     rows: list[Any] | None
     dag: dict[str, Any] | None
     error: str | None = None
-
-
-# --------------------------------------------------------------------------- #
-# Static guard                                                                 #
-# --------------------------------------------------------------------------- #
-
-
-def _module_allowed(name: str, allowed: frozenset[str]) -> bool:
-    return name in allowed or any(name.startswith(f"{prefix}.") for prefix in allowed)
-
-
-def _import_violations(tree: ast.AST, allowed: frozenset[str]) -> Iterator[tuple[str, int]]:
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if not _module_allowed(alias.name, allowed):
-                    yield alias.name, node.lineno
-        elif isinstance(node, ast.ImportFrom):
-            base = node.module or ""
-            if node.level:
-                yield f"{'.' * node.level}{base}", node.lineno
-            elif not _module_allowed(base, allowed):
-                for alias in node.names:
-                    if not _module_allowed(f"{base}.{alias.name}", allowed):
-                        yield f"{base}.{alias.name}", node.lineno
-
-
-def _call_name(func: ast.expr) -> str | None:
-    if isinstance(func, ast.Name):
-        return func.id
-    if isinstance(func, ast.Attribute):
-        return func.attr
-    return None
-
-
-def _mode_position(func: ast.expr) -> int:
-    """``open(path, mode)`` / ``io.open(path, mode)`` vs ``Path.open(mode)``."""
-    if isinstance(func, ast.Name):
-        return 1
-    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-        return 1 if func.value.id == "io" else 0
-    return 0
-
-
-def _open_mode(call: ast.Call) -> str:
-    position = _mode_position(call.func)
-    mode_node: ast.expr | None = call.args[position] if len(call.args) > position else None
-    if mode_node is None:
-        mode_node = next((kw.value for kw in call.keywords if kw.arg == "mode"), None)
-    if mode_node is None:
-        return "r"
-    if isinstance(mode_node, ast.Constant) and isinstance(mode_node.value, str):
-        return mode_node.value
-    return DYNAMIC_MODE
-
-
-def _call_violations(tree: ast.AST) -> Iterator[tuple[str, int]]:
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            name = _call_name(node.func)
-            if name in OPEN_LIKE_CALLS:
-                mode = _open_mode(node)
-                if mode == DYNAMIC_MODE or WRITE_MODE_CHARS & set(mode):
-                    yield f"{name}(mode={mode!r})", node.lineno
-            elif name in FORBIDDEN_CALLS:
-                yield f"{name}()", node.lineno
-        elif isinstance(node, ast.Attribute) and node.attr in FORBIDDEN_DUNDERS:
-            yield node.attr, node.lineno
-        elif isinstance(node, ast.Name) and node.id in FORBIDDEN_DUNDERS:
-            yield node.id, node.lineno
-
-
-def scan_source(source: str, allowed: frozenset[str], check: CheckId) -> tuple[Finding, ...]:
-    """AST allowlist scan. Any finding means the code must not be executed."""
-    try:
-        tree = ast.parse(source)
-    except SyntaxError as exc:
-        evidence = {"syntax_error": exc.msg, "lineno": exc.lineno}
-        return (
-            Finding(
-                check=check, severity=Severity.ERROR, message="syntax error", evidence=evidence
-            ),
-        )
-    findings = [
-        Finding(
-            check=check,
-            severity=Severity.ERROR,
-            message=f"forbidden import {name!r} (line {lineno})",
-            evidence={"forbidden_import": name, "lineno": lineno},
-        )
-        for name, lineno in _import_violations(tree, allowed)
-    ]
-    findings.extend(
-        Finding(
-            check=check,
-            severity=Severity.ERROR,
-            message=f"forbidden call {desc} (line {lineno})",
-            evidence={"forbidden_call": desc, "lineno": lineno},
-        )
-        for desc, lineno in _call_violations(tree)
-    )
-    return tuple(findings)
-
-
-def scan_pipeline(source: str) -> tuple[Finding, ...]:
-    return scan_source(source, PIPELINE_ALLOWED_MODULES, CheckId.RUNTIME)
-
-
-def scan_dag(source: str) -> tuple[Finding, ...]:
-    return scan_source(source, DAG_ALLOWED_MODULES, CheckId.DAG_CONTRACT)
 
 
 # --------------------------------------------------------------------------- #

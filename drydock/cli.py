@@ -227,15 +227,22 @@ def show(
         typer.echo(f"{key:>14}: {getattr(record, key)}")
     typer.echo("")
     rows = [
-        [
-            entry["iteration"],
-            entry["passed"],
-            entry["wall_ms"],
-            "; ".join(f"{e['check']}: {e['message']}" for e in entry["errors"]) or "-",
-        ]
+        [entry["iteration"], entry["passed"], entry["wall_ms"], _errors_cell(entry["errors"])]
         for entry in iterations
     ]
     typer.echo(render_table(("iteration", "passed", "wall_ms", "errors"), rows))
+
+
+MAX_SHOWN_ERRORS = 3
+
+
+def _errors_cell(errors: list[dict[str, Any]]) -> str:
+    """First few findings for the table; ``--json`` carries the full list."""
+    shown = errors[:MAX_SHOWN_ERRORS]
+    text = "; ".join(f"{e['check']}: {e['message']}" for e in shown) or "-"
+    if len(errors) > MAX_SHOWN_ERRORS:
+        text += f" (+{len(errors) - MAX_SHOWN_ERRORS} more, use --json)"
+    return text
 
 
 @app.command()
@@ -314,10 +321,11 @@ def mcp(ctx: typer.Context) -> None:
 def bench(
     ctx: typer.Context,
     out: Path = typer.Option(DEFAULT_BENCH_OUT, help="Where to write headline.json."),
+    keep: bool = typer.Option(False, "--keep", help="Keep the temporary DB, runs and deploy tree."),
 ) -> None:
     """Run every corpus scenario offline and write the metrics headline (T-009)."""
     module = lazy_module("drydock.bench", "T-009")
-    module.main(out=out)
+    module.main(out=out, keep=keep)
 
 
 @corpus_app.command("verify")
