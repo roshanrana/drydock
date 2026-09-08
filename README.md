@@ -76,6 +76,8 @@ Every figure below was observed by `make bench`, which runs offline with a fixed
 
 ## How it works
 
+[docs/OVERVIEW.md](docs/OVERVIEW.md) has the design reasoning; [docs/SHOWCASE.md](docs/SHOWCASE.md) is the guided tour with the commands to run.
+
 <img src="docs/assets/dashboard.png" alt="DRYDOCK review dashboard: a blue-harbour-fx run whose first iteration failed H2, H3 and H4 and whose second iteration passed all six checks" width="920">
 
 *The review dashboard on a self-heal run: iteration 1 parsed the trailer row as data and failed schema, completeness and drift; iteration 2 passed and stopped at the approval gate.*
