@@ -265,6 +265,7 @@ docs/serving.md      provider matrix and data perimeter
 docs/runbook.md      operating procedures
 docs/mcp.md          registering the MCP server in a client (written at ship)
 docs/ship-report.md  gate evidence, review findings, known issues (written at ship)
+docs/graph/README.md queryable code graph (graphify): build, query, three worked examples
 data/                drydock.db, created on first run (ignored by git)
 runs/                per-run artifacts and events.jsonl (ignored by git)
 deploy/              approved artifacts, written only by publish (ignored by git)

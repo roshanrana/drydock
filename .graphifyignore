@@ -1,0 +1,8 @@
+.venv/
+graphify-out/
+corpus/
+runs/
+deploy/
+data/
+tests/fixtures/
+uv.lock

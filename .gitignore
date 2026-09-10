@@ -19,3 +19,6 @@ dist/
 build/
 .env
 .audit-requirements.txt
+
+graphify-out/*
+!graphify-out/GRAPH_REPORT.md

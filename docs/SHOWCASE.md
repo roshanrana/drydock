@@ -96,6 +96,16 @@ Six clients through the graph, five adversarial artifacts through the harness, i
 
 ruff, ruff format, mypy on the host and on the Linux target, pytest with a coverage floor, the bench, the bench drift check, the card drift check. CI runs the same script and nothing else.
 
+## Query the code graph
+
+```bash
+graphify explain "graph_service_runservice"          # RunService, the facade every surface calls
+graphify path "build()" "run_in_sandbox"              # how a command reaches the sandbox runner
+graphify affected "drydock_models_harnessreport" --depth 1   # who breaks if the report contract changes
+```
+
+drydock carries a tree-sitter code graph (1734 nodes, 5782 edges, 80 communities; rebuild in ~7s with `graphify update .`). It answers dependency and relationship questions in a few hundred tokens instead of a grep-and-read pass. See [docs/graph/README.md](graph/README.md) for the full write-up, including two places the graph's answer needed a second look.
+
 ## Things worth noticing
 
 - **The escalate scenario is a wrong spec, not a broken generator.** The pin is the client's asserted row count. A correct pipeline cannot invent a row, so the harness fails it three times and a person gets the contradiction. That is the behaviour a bank wants.
